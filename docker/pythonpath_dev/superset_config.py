@@ -105,6 +105,7 @@ SQLLAB_CTAS_NO_LIMIT = True
 SESSION_COOKIE_SAMESITE = None
 SESSION_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = False # maybe remove this if/when we switch over to domain
+CSRF_ENABLED = False
 
 #
 # Optionally import superset_config_docker.py (which will have been included on
