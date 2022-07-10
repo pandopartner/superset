@@ -101,7 +101,10 @@ WEBDRIVER_BASEURL = "http://superset:8088/"
 WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
 
 SQLLAB_CTAS_NO_LIMIT = True
-# ENABLE_TEMPLATE_PROCESSING = True
+# to allow embedding...
+SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = False # maybe remove this if/when we switch over to domain
 
 #
 # Optionally import superset_config_docker.py (which will have been included on
