@@ -12,6 +12,7 @@ class CustomAuthDBView(AuthDBView):
     @expose('/login/', methods=['GET', 'POST'])
     def login(self):
         redirect_url = self.appbuilder.get_url_for_index
+        print('arguments:', request.args)
         if request.args.get('redirect') is not None:
             redirect_url = request.args.get('redirect') 
         # print('USERNAME!', request.args.get('username'), request.args.get('redirect'), request.args)
