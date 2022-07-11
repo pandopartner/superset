@@ -80,11 +80,12 @@ services:
     depends_on: *superset-depends-on
     user: "root"
     volumes: *superset-volumes
-    
+
   nginx:
     build: ./nginx
     ports:
-      - "80:80"
+      - 80:80
+      - 443:443
     depends_on:
       - superset
 

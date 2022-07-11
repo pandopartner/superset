@@ -124,6 +124,7 @@ try:
 except ImportError:
     logger.info("Using default Docker config...")
 
+
 class ReverseProxied(object):
 
     def __init__(self, app):
