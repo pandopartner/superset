@@ -82,7 +82,6 @@ services:
     volumes: *superset-volumes
 
   nginx:
-    image: *superset-image
     build: ./nginx
     ports:
       - 80:80
