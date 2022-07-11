@@ -1185,9 +1185,11 @@ RLS_FORM_QUERY_REL_FIELDS: Optional[Dict[str, List[List[Any]]]] = None
 # See https://flask.palletsprojects.com/en/1.1.x/security/#set-cookie-options
 # for details
 #
-SESSION_COOKIE_HTTPONLY = True  # Prevent cookie from being read by frontend JS?
+SESSION_COOKIE_HTTPONLY = False  # Prevent cookie from being read by frontend JS?
 SESSION_COOKIE_SECURE = False  # Prevent cookie from being transmitted over non-tls?
-SESSION_COOKIE_SAMESITE = "Lax"  # One of [None, 'None', 'Lax', 'Strict']
+SESSION_COOKIE_SAMESITE = "None"  # One of [None, 'None', 'Lax', 'Strict']
+CSRF_ENABLED = False
+WTF_CSRF_ENABLED = False
 
 # Cache static resources.
 SEND_FILE_MAX_AGE_DEFAULT = int(timedelta(days=365).total_seconds())
@@ -1291,7 +1293,6 @@ ADVANCED_DATA_TYPES: Dict[str, AdvancedDataType] = {
     "internet_address": internet_address,
     "port": internet_port,
 }
-
 
 # -------------------------------------------------------------------
 # *                WARNING:  STOP EDITING  HERE                    *
