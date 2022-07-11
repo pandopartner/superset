@@ -40,6 +40,14 @@ services:
     volumes:
       - db_home:/var/lib/postgresql/data
 
+  nginx:
+    build: ./nginx
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - superset
+
   superset:
     env_file: docker/.env-non-dev
     image: *superset-image
@@ -80,14 +88,6 @@ services:
     depends_on: *superset-depends-on
     user: "root"
     volumes: *superset-volumes
-
-  nginx:
-    build: ./nginx
-    ports:
-      - 80:80
-      - 443:443
-    depends_on:
-      - superset
 
 volumes:
   superset_home:
