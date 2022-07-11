@@ -102,16 +102,11 @@ WEBDRIVER_BASEURL_USER_FRIENDLY = WEBDRIVER_BASEURL
 
 SQLLAB_CTAS_NO_LIMIT = True
 # to allow embedding...
-# SESSION_COOKIE_SAMESITE = 'None'
-# SESSION_COOKIE_SECURE = True
-# SESSION_COOKIE_HTTPONLY = False # maybe remove this if/when we switch over to domain
-# CSRF_ENABLED = False
-# WTF_CSRF_ENABLED = False
+WTF_CSRF_ENABLED = False
 #
 # Optionally import superset_config_docker.py (which will have been included on
 # the PYTHONPATH) in order to allow for local settings to be overridden
 #
-
 from security import CustomSecurityManager
 CUSTOM_SECURITY_MANAGER = CustomSecurityManager
 

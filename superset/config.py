@@ -1164,7 +1164,7 @@ TALISMAN_ENABLED = False
 # If you want Talisman, how do you want it configured??
 TALISMAN_CONFIG = {
     "content_security_policy": None,
-    "force_https": True,
+    "force_https": False,
     "force_https_permanent": False,
 }
 
@@ -1189,7 +1189,7 @@ SESSION_COOKIE_HTTPONLY = False  # Prevent cookie from being read by frontend JS
 SESSION_COOKIE_SECURE = False  # Prevent cookie from being transmitted over non-tls?
 SESSION_COOKIE_SAMESITE = "None"  # One of [None, 'None', 'Lax', 'Strict']
 CSRF_ENABLED = False
-WTF_CSRF_ENABLED = False
+# WTF_CSRF_ENABLED = False
 
 # Cache static resources.
 SEND_FILE_MAX_AGE_DEFAULT = int(timedelta(days=365).total_seconds())
