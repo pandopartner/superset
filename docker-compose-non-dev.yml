@@ -81,13 +81,13 @@ services:
     user: "root"
     volumes: *superset-volumes
 
-  nginx:
-    build: ./nginx
-    ports:
-      - 80:80
-      - 443:443
-    depends_on:
-      - superset
+  # nginx:
+  #   build: ./nginx
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   depends_on:
+  #     - superset
 
 volumes:
   superset_home:
