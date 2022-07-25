@@ -91,3 +91,48 @@ class CurrentUserRestApi(BaseApi):
             return self.response_401()
         user = bootstrap_user_data(g.user, include_perms=True)
         return self.response(200, result=user)
+
+# class CreateUserRestApi(BaseApi):
+#     """An api to create a user"""
+
+#     resource_name = "users"
+#     openapi_spec_tag = "Create User"
+#     openapi_spec_component_schemas = (UserResponseSchema,)
+
+#     @expose("/", methods=["POST"])
+#     @safe
+#     def create_user(self) -> Response:
+#         """Create a user
+#         ---
+#         post:
+#           description: >-
+#             Create a user.
+#           requestBody:
+#             description: >-
+#               The user to create.
+#             required: true
+#             content:
+#               application/json:
+#                 schema:
+#                   $ref: '#/components/schemas/UserResponseSchema'
+#           responses:
+#             200:
+#               description: The created user
+#               content:
+#                 application/json:
+#                   schema:
+#                     type: object
+#                     properties:
+#                       result:
+#                         $ref: '#/components/schemas/UserResponseSchema'
+#             400:
+#               $ref: '#/components/responses/400'
+#             401:
+#               $ref: '#/components/responses/401'
+#             422:
+#               $ref: '#/components/responses/422'
+#             500:
+#               $ref: '#/components/responses/500'
+#         """
+#         # view users, add users
+#         return self.response(200, result=user_response_schema.dump(g.user))
