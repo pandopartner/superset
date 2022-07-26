@@ -49,7 +49,7 @@ class CustomAuthDBView(AuthDBView):
                 flash('You do not have access to this organization')
                 return super(CustomAuthDBView,self).login()
             else:
-                print('User is a part of this org - redirecting...')
+                print('User is a part of this org - redirecting...', org_id, org_exists)
                 user = self.appbuilder.sm.find_user(username=org_id) # find if the user has access
                 login_user(user, remember=False)
                 print('redirecting to', redirect_url)
