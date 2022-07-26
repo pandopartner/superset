@@ -42,19 +42,18 @@ class CustomAuthDBView(AuthDBView):
                     'x-hasura-admin-secret': 'myadminsecretkey' # is this secure?
                 }
             ).json()
-            print(fb_user)
-            org_id = redirect_url.split('?')[1].split('&')[0]
-            print(org_id)
+            org_id = redirect_url.split('?')[1].split('&')[0].split('=')[1]
             org_exists = next((f for f in fb_user['data']['user'][0]['org_user_bonds'] if f['org_id'] == org_id), None)
-            print(org_exists)
-            if org_exists is not None:
+            if org_exists is None:
+                print('User is not a part of this org')
+                flash('You do not have access to this organization')
+                return super(CustomAuthDBView,self).login()
+            else:
+                print('User is a part of this org - redirecting...')
                 user = self.appbuilder.sm.find_user(username=org_id) # find if the user has access
                 login_user(user, remember=False)
                 print('redirecting to', redirect_url)
                 return redirect(redirect_url)
-            else:
-                flash('You do not have access to this organization')
-                return super(CustomAuthDBView,self).login()
         elif g.user is not None and g.user.is_authenticated:
             return redirect(redirect_url)
         else:
