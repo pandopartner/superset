@@ -44,21 +44,18 @@ services:
     build: ./nginx
     ports:
       - 80:80
-      # - 443:443
+      - 443:443
+    restart: always
     depends_on:
       - superset
     volumes:
-      # - ./data/certbot/conf:/etc/letsencrypt
-      # - ./data/certbot/www:/var/www/certbot
-      # - ./nginx/conf/:/etc/nginx/conf.d/:ro
+      - ./nginx/conf/:/etc/nginx/conf.d/:ro
       - ./certbot/www:/var/www/certbot/:ro
-      - ./certbot/conf/:/etc/nginx/ssl/:ro
 
   certbot:
     image: certbot/certbot
     volumes:
       - ./certbot/www/:/var/www/certbot/:rw
-      - ./certbot/conf/:/etc/letsencrypt/:rw
 
   superset:
     env_file: docker/.env-non-dev
