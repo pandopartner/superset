@@ -498,6 +498,14 @@ COMMON_BOOTSTRAP_OVERRIDES_FUNC: Callable[
 
 # This is merely a default
 EXTRA_CATEGORICAL_COLOR_SCHEMES: List[Dict[str, Any]] = []
+EXTRA_CATEGORICAL_COLOR_SCHEMES = [
+    {
+        "id": 'pandopartner',
+        "description": 'colors from PandoPartner style guide',
+        'label': 'PandoPartner colors',
+        'colors': ['#15587C', '#F49E40', '#F7D64D', '#021123', '#BC3419', '#6D6E71', '#FFF8E8']
+    }
+]
 
 # THEME_OVERRIDES is used for adding custom theme to superset
 # example code for "My theme" custom scheme
