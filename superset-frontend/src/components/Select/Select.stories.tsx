@@ -16,15 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { ReactNode, useState, useCallback, useRef } from 'react';
+import React, {
+  ReactNode,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import Button from 'src/components/Button';
 import ControlHeader from 'src/explore/components/ControlHeader';
-import Select, {
-  SelectProps,
+import AsyncSelect, {
+  AsyncSelectProps,
+  AsyncSelectRef,
   OptionsTypePage,
-  OptionsType,
-  SelectRef,
-} from './Select';
+} from './AsyncSelect';
+
+import Select, { SelectProps, OptionsType } from './Select';
 
 export default {
   title: 'Select',
@@ -381,19 +388,19 @@ const USERS = [
   'Ilenia',
 ].sort();
 
-export const AsyncSelect = ({
+export const AsynchronousSelect = ({
   fetchOnlyOnSearch,
   withError,
   withInitialValue,
   responseTime,
   ...rest
-}: SelectProps & {
+}: AsyncSelectProps & {
   withError: boolean;
   withInitialValue: boolean;
   responseTime: number;
 }) => {
   const [requests, setRequests] = useState<ReactNode[]>([]);
-  const ref = useRef<SelectRef>(null);
+  const ref = useRef<AsyncSelectRef>(null);
 
   const getResults = (username?: string) => {
     let results: { label: string; value: string }[] = [];
@@ -456,6 +463,11 @@ export const AsyncSelect = ({
       reject(new Error('Error while fetching the names from the server'));
     });
 
+  const initialValue = useMemo(
+    () => ({ label: 'Valentina', value: 'Valentina' }),
+    [],
+  );
+
   return (
     <>
       <div
@@ -463,17 +475,13 @@ export const AsyncSelect = ({
           width: DEFAULT_WIDTH,
         }}
       >
-        <Select
+        <AsyncSelect
           {...rest}
           ref={ref}
           fetchOnlyOnSearch={fetchOnlyOnSearch}
           options={withError ? fetchUserListError : fetchUserListPage}
-          placeholder={fetchOnlyOnSearch ? 'Type anything' : 'Select...'}
-          value={
-            withInitialValue
-              ? { label: 'Valentina', value: 'Valentina' }
-              : undefined
-          }
+          placeholder={fetchOnlyOnSearch ? 'Type anything' : 'AsyncSelect...'}
+          value={withInitialValue ? initialValue : undefined}
         />
       </div>
       <div
@@ -509,7 +517,7 @@ export const AsyncSelect = ({
   );
 };
 
-AsyncSelect.args = {
+AsynchronousSelect.args = {
   allowClear: false,
   allowNewOptions: false,
   fetchOnlyOnSearch: false,
@@ -519,7 +527,7 @@ AsyncSelect.args = {
   tokenSeparators: ['\n', '\t', ';'],
 };
 
-AsyncSelect.argTypes = {
+AsynchronousSelect.argTypes = {
   ...ARG_TYPES,
   header: {
     table: {
@@ -552,7 +560,7 @@ AsyncSelect.argTypes = {
   },
 };
 
-AsyncSelect.story = {
+AsynchronousSelect.story = {
   parameters: {
     knobs: {
       disable: true,

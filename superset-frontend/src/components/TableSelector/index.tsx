@@ -36,6 +36,7 @@ import RefreshLabel from 'src/components/RefreshLabel';
 import CertifiedBadge from 'src/components/CertifiedBadge';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { useToasts } from 'src/components/MessageToasts/withToasts';
+import { SchemaOption } from 'src/SqlLab/types';
 
 const TableSelectorWrapper = styled.div`
   ${({ theme }) => `
@@ -81,7 +82,7 @@ const TableLabel = styled.span`
 
 interface TableSelectorProps {
   clearable?: boolean;
-  database?: DatabaseObject;
+  database?: DatabaseObject | null;
   emptyState?: ReactNode;
   formMode?: boolean;
   getDbList?: (arg0: any) => {};
@@ -89,7 +90,7 @@ interface TableSelectorProps {
   isDatabaseSelectEnabled?: boolean;
   onDbChange?: (db: DatabaseObject) => void;
   onSchemaChange?: (schema?: string) => void;
-  onSchemasLoad?: () => void;
+  onSchemasLoad?: (schemaOptions: SchemaOption[]) => void;
   onTablesLoad?: (options: Array<any>) => void;
   readOnly?: boolean;
   schema?: string;
@@ -166,12 +167,11 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
   onTableSelectChange,
 }) => {
   const [currentDatabase, setCurrentDatabase] = useState<
-    DatabaseObject | undefined
+    DatabaseObject | null | undefined
   >(database);
   const [currentSchema, setCurrentSchema] = useState<string | undefined>(
     schema,
   );
-
   const [tableOptions, setTableOptions] = useState<TableOption[]>([]);
   const [tableSelectValue, setTableSelectValue] = useState<
     SelectValue | undefined
@@ -189,6 +189,10 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
       setTableSelectValue(undefined);
     }
   }, [database, tableSelectMode]);
+
+  useEffect(() => {
+    setCurrentDatabase(database);
+  }, [database]);
 
   useEffect(() => {
     if (tableSelectMode === 'single') {
@@ -333,7 +337,6 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
         filterOption={handleFilterOption}
         header={header}
         labelInValue
-        lazyLoading={false}
         loading={loadingTables}
         name="select-table"
         onChange={(options: TableOption | TableOption[]) =>

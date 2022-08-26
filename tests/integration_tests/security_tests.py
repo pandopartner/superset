@@ -20,7 +20,7 @@ import time
 import unittest
 from collections import namedtuple
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call, ANY
 from typing import Any
 
 import jwt
@@ -61,6 +61,7 @@ from tests.integration_tests.fixtures.world_bank_dashboard import (
     load_world_bank_dashboard_with_slices,
     load_world_bank_data,
 )
+from .dashboard_utils import get_table
 
 NEW_SECURITY_CONVERGE_VIEWS = (
     "Annotation",
@@ -72,6 +73,158 @@ NEW_SECURITY_CONVERGE_VIEWS = (
     "Query",
     "SavedQuery",
 )
+
+GAMMA_ROLE_PERMISSIONS = {
+    "Gamma": [
+        ["menu_access", "List Users"],
+        ["can_read", "SavedQuery"],
+        ["can_write", "SavedQuery"],
+        ["can_read", "CssTemplate"],
+        ["can_write", "CssTemplate"],
+        ["can_read", "ReportSchedule"],
+        ["can_write", "ReportSchedule"],
+        ["can_read", "Chart"],
+        ["can_write", "Chart"],
+        ["can_read", "Annotation"],
+        ["can_write", "Annotation"],
+        ["can_read", "Dataset"],
+        ["can_read", "Dashboard"],
+        ["can_write", "Dashboard"],
+        ["can_read", "Database"],
+        ["can_read", "Query"],
+        ["can_this_form_post", "ResetMyPasswordView"],
+        ["can_this_form_get", "ResetMyPasswordView"],
+        ["can_this_form_post", "UserInfoEditView"],
+        ["can_this_form_get", "UserInfoEditView"],
+        ["can_userinfo", "UserDBModelView"],
+        ["resetmypassword", "UserDBModelView"],
+        ["can_get", "OpenApi"],
+        ["can_show", "SwaggerView"],
+        ["can_get", "MenuApi"],
+        ["can_list", "AsyncEventsRestApi"],
+        ["can_read", "AdvancedDataType"],
+        ["can_invalidate", "CacheRestApi"],
+        ["can_export", "Chart"],
+        ["can_read", "DashboardFilterStateRestApi"],
+        ["can_write", "DashboardFilterStateRestApi"],
+        ["can_read", "DashboardPermalinkRestApi"],
+        ["can_write", "DashboardPermalinkRestApi"],
+        ["can_delete_embedded", "Dashboard"],
+        ["can_get_embedded", "Dashboard"],
+        ["can_export", "Dashboard"],
+        ["can_read", "EmbeddedDashboard"],
+        ["can_read", "Explore"],
+        ["can_read", "ExploreFormDataRestApi"],
+        ["can_write", "ExploreFormDataRestApi"],
+        ["can_read", "ExplorePermalinkRestApi"],
+        ["can_write", "ExplorePermalinkRestApi"],
+        ["can_delete", "FilterSets"],
+        ["can_list", "FilterSets"],
+        ["can_edit", "FilterSets"],
+        ["can_add", "FilterSets"],
+        ["can_import_", "ImportExportRestApi"],
+        ["can_export", "ImportExportRestApi"],
+        ["can_export", "SavedQuery"],
+        ["can_show", "DynamicPlugin"],
+        ["can_list", "DynamicPlugin"],
+        ["can_time_range", "Api"],
+        ["can_query_form_data", "Api"],
+        ["can_query", "Api"],
+        ["can_this_form_post", "CsvToDatabaseView"],
+        ["can_this_form_get", "CsvToDatabaseView"],
+        ["can_this_form_post", "ExcelToDatabaseView"],
+        ["can_this_form_get", "ExcelToDatabaseView"],
+        ["can_this_form_post", "ColumnarToDatabaseView"],
+        ["can_this_form_get", "ColumnarToDatabaseView"],
+        ["can_get", "Datasource"],
+        ["can_external_metadata", "Datasource"],
+        ["can_external_metadata_by_name", "Datasource"],
+        ["can_get_value", "KV"],
+        ["can_store", "KV"],
+        ["can_my_queries", "SqlLab"],
+        ["can_created_dashboards", "Superset"],
+        ["can_testconn", "Superset"],
+        ["can_estimate_query_cost", "Superset"],
+        ["can_explore", "Superset"],
+        ["can_fetch_datasource_metadata", "Superset"],
+        ["can_search_queries", "Superset"],
+        ["can_save_dash", "Superset"],
+        ["can_dashboard_permalink", "Superset"],
+        ["can_warm_up_cache", "Superset"],
+        ["can_request_access", "Superset"],
+        ["can_datasources", "Superset"],
+        ["can_available_domains", "Superset"],
+        ["can_dashboard", "Superset"],
+        ["can_annotation_json", "Superset"],
+        ["can_created_slices", "Superset"],
+        ["can_slice_json", "Superset"],
+        ["can_profile", "Superset"],
+        ["can_filter", "Superset"],
+        ["can_validate_sql_json", "Superset"],
+        ["can_slice", "Superset"],
+        ["can_sqllab", "Superset"],
+        ["can_log", "Superset"],
+        ["can_recent_activity", "Superset"],
+        ["can_tables", "Superset"],
+        ["can_fave_slices", "Superset"],
+        ["can_sqllab_viz", "Superset"],
+        ["can_fave_dashboards", "Superset"],
+        ["can_results", "Superset"],
+        ["can_extra_table_metadata", "Superset"],
+        ["can_schemas_access_for_file_upload", "Superset"],
+        ["can_fave_dashboards_by_username", "Superset"],
+        ["can_csv", "Superset"],
+        ["can_add_slices", "Superset"],
+        ["can_explore_json", "Superset"],
+        ["can_sqllab_history", "Superset"],
+        ["can_import_dashboards", "Superset"],
+        ["can_sqllab_table_viz", "Superset"],
+        ["can_stop_query", "Superset"],
+        ["can_favstar", "Superset"],
+        ["can_copy_dash", "Superset"],
+        ["can_queries", "Superset"],
+        ["can_user_slices", "Superset"],
+        ["can_delete", "TableSchemaView"],
+        ["can_post", "TableSchemaView"],
+        ["can_expanded", "TableSchemaView"],
+        ["can_get", "TabStateView"],
+        ["can_post", "TabStateView"],
+        ["can_migrate_query", "TabStateView"],
+        ["can_put", "TabStateView"],
+        ["can_activate", "TabStateView"],
+        ["can_delete", "TabStateView"],
+        ["can_delete_query", "TabStateView"],
+        ["can_get", "TagView"],
+        ["can_tagged_objects", "TagView"],
+        ["can_post", "TagView"],
+        ["can_delete", "TagView"],
+        ["can_suggestions", "TagView"],
+        ["can_read", "SecurityRestApi"],
+        ["menu_access", "List Roles"],
+        ["menu_access", "Action Log"],
+        ["menu_access", "Access requests"],
+        ["menu_access", "Home"],
+        ["menu_access", "Annotation Layers"],
+        ["menu_access", "Plugins"],
+        ["menu_access", "Import Dashboards"],
+        ["menu_access", "Alerts & Report"],
+        ["menu_access", "Dashboards"],
+        ["menu_access", "Charts"],
+        ["menu_access", "SQL Editor"],
+        ["menu_access", "Saved Queries"],
+        ["menu_access", "Query Search"],
+        ["menu_access", "Data"],
+        ["menu_access", "Databases"],
+        ["menu_access", "Datasets"],
+        ["can_share_dashboard", "Superset"],
+        ["can_share_chart", "Superset"],
+    ],
+    "schema_access_role": [["schema_access", "[examples].[temp_schema]"]],
+    "dummy_role": [
+        ["datasource_access", "[examples].[wb_health_population](id:1)"],
+        ["database_access", "[examples].(id:1)"],
+    ],
+}
 
 
 def get_perm_tuples(role_name):
@@ -157,6 +310,9 @@ class TestRolePermission(SupersetTestCase):
         session.commit()
 
     def test_set_perm_sqla_table(self):
+        security_manager.on_view_menu_after_insert = Mock()
+        security_manager.on_permission_view_after_insert = Mock()
+
         session = db.session
         table = SqlaTable(
             schema="tmp_schema",
@@ -172,19 +328,38 @@ class TestRolePermission(SupersetTestCase):
         self.assertEqual(
             stored_table.perm, f"[examples].[tmp_perm_table](id:{stored_table.id})"
         )
-        self.assertIsNotNone(
-            security_manager.find_permission_view_menu(
-                "datasource_access", stored_table.perm
-            )
+
+        pvm_dataset = security_manager.find_permission_view_menu(
+            "datasource_access", stored_table.perm
         )
+        pvm_schema = security_manager.find_permission_view_menu(
+            "schema_access", stored_table.schema_perm
+        )
+
+        self.assertIsNotNone(pvm_dataset)
         self.assertEqual(stored_table.schema_perm, "[examples].[tmp_schema]")
-        self.assertIsNotNone(
-            security_manager.find_permission_view_menu(
-                "schema_access", stored_table.schema_perm
-            )
+        self.assertIsNotNone(pvm_schema)
+
+        # assert on permission hooks
+        view_menu_dataset = security_manager.find_view_menu(
+            f"[examples].[tmp_perm_table](id:{stored_table.id})"
+        )
+        view_menu_schema = security_manager.find_view_menu(f"[examples].[tmp_schema]")
+        security_manager.on_view_menu_after_insert.assert_has_calls(
+            [
+                call(ANY, ANY, view_menu_dataset),
+                call(ANY, ANY, view_menu_schema),
+            ]
+        )
+        security_manager.on_permission_view_after_insert.assert_has_calls(
+            [
+                call(ANY, ANY, pvm_dataset),
+                call(ANY, ANY, pvm_schema),
+            ]
         )
 
         # table name change
+        orig_table_perm = stored_table.perm
         stored_table.table_name = "tmp_perm_table_v2"
         session.commit()
         stored_table = (
@@ -192,6 +367,11 @@ class TestRolePermission(SupersetTestCase):
         )
         self.assertEqual(
             stored_table.perm, f"[examples].[tmp_perm_table_v2](id:{stored_table.id})"
+        )
+        self.assertIsNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", orig_table_perm
+            )
         )
         self.assertIsNotNone(
             security_manager.find_permission_view_menu(
@@ -333,6 +513,186 @@ class TestRolePermission(SupersetTestCase):
         session.delete(stored_db)
         session.commit()
 
+    def test_after_update_database__perm_database_access(self):
+        session = db.session
+        database = Database(database_name="tmp_database", sqlalchemy_uri="sqlite://")
+        session.add(database)
+        session.commit()
+        stored_db = (
+            session.query(Database).filter_by(database_name="tmp_database").one()
+        )
+
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "database_access", stored_db.perm
+            )
+        )
+
+        stored_db.database_name = "tmp_database2"
+        session.commit()
+
+        # Assert that the old permission was updated
+        self.assertIsNone(
+            security_manager.find_permission_view_menu(
+                "database_access", f"[tmp_database].(id:{stored_db.id})"
+            )
+        )
+        # Assert that the db permission was updated
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "database_access", f"[tmp_database2].(id:{stored_db.id})"
+            )
+        )
+        session.delete(stored_db)
+        session.commit()
+
+    def test_after_update_database__perm_database_access_exists(self):
+        session = db.session
+        # Add a bogus existing permission before the change
+
+        database = Database(database_name="tmp_database", sqlalchemy_uri="sqlite://")
+        session.add(database)
+        session.commit()
+        stored_db = (
+            session.query(Database).filter_by(database_name="tmp_database").one()
+        )
+        security_manager.add_permission_view_menu(
+            "database_access", f"[tmp_database2].(id:{stored_db.id})"
+        )
+
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "database_access", stored_db.perm
+            )
+        )
+
+        stored_db.database_name = "tmp_database2"
+        session.commit()
+
+        # Assert that the old permission was updated
+        self.assertIsNone(
+            security_manager.find_permission_view_menu(
+                "database_access", f"[tmp_database].(id:{stored_db.id})"
+            )
+        )
+        # Assert that the db permission was updated
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "database_access", f"[tmp_database2].(id:{stored_db.id})"
+            )
+        )
+        session.delete(stored_db)
+        session.commit()
+
+    def test_after_update_database__perm_datasource_access(self):
+        session = db.session
+        database = Database(database_name="tmp_database", sqlalchemy_uri="sqlite://")
+        session.add(database)
+        session.commit()
+
+        table1 = SqlaTable(
+            schema="tmp_schema",
+            table_name="tmp_table1",
+            database=database,
+        )
+        session.add(table1)
+        table2 = SqlaTable(
+            schema="tmp_schema",
+            table_name="tmp_table2",
+            database=database,
+        )
+        session.add(table2)
+        session.commit()
+        slice1 = Slice(
+            datasource_id=table1.id,
+            datasource_type=DatasourceType.TABLE,
+            datasource_name="tmp_table1",
+            slice_name="tmp_slice1",
+        )
+        session.add(slice1)
+        session.commit()
+        slice1 = session.query(Slice).filter_by(slice_name="tmp_slice1").one()
+        table1 = session.query(SqlaTable).filter_by(table_name="tmp_table1").one()
+        table2 = session.query(SqlaTable).filter_by(table_name="tmp_table2").one()
+
+        # assert initial perms
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", f"[tmp_database].[tmp_table1](id:{table1.id})"
+            )
+        )
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", f"[tmp_database].[tmp_table2](id:{table2.id})"
+            )
+        )
+        self.assertEqual(slice1.perm, f"[tmp_database].[tmp_table1](id:{table1.id})")
+        self.assertEqual(table1.perm, f"[tmp_database].[tmp_table1](id:{table1.id})")
+        self.assertEqual(table2.perm, f"[tmp_database].[tmp_table2](id:{table2.id})")
+
+        stored_db = (
+            session.query(Database).filter_by(database_name="tmp_database").one()
+        )
+        stored_db.database_name = "tmp_database2"
+        session.commit()
+
+        # Assert that the old permissions were updated
+        self.assertIsNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", f"[tmp_database].[tmp_table1](id:{table1.id})"
+            )
+        )
+        self.assertIsNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", f"[tmp_database].[tmp_table2](id:{table2.id})"
+            )
+        )
+
+        # Assert that the db permission was updated
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", f"[tmp_database2].[tmp_table1](id:{table1.id})"
+            )
+        )
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "datasource_access", f"[tmp_database2].[tmp_table2](id:{table2.id})"
+            )
+        )
+        self.assertEqual(slice1.perm, f"[tmp_database2].[tmp_table1](id:{table1.id})")
+        self.assertEqual(table1.perm, f"[tmp_database2].[tmp_table1](id:{table1.id})")
+        self.assertEqual(table2.perm, f"[tmp_database2].[tmp_table2](id:{table2.id})")
+
+        session.delete(slice1)
+        session.delete(table1)
+        session.delete(table2)
+        session.delete(stored_db)
+        session.commit()
+
+    def test_after_delete_database__perm_database_access(self):
+        session = db.session
+        database = Database(database_name="tmp_database", sqlalchemy_uri="sqlite://")
+        session.add(database)
+        session.commit()
+        stored_db = (
+            session.query(Database).filter_by(database_name="tmp_database").one()
+        )
+
+        self.assertIsNotNone(
+            security_manager.find_permission_view_menu(
+                "database_access", stored_db.perm
+            )
+        )
+        session.delete(stored_db)
+        session.commit()
+
+        # Assert that the old permission was updated
+        self.assertIsNone(
+            security_manager.find_permission_view_menu(
+                "database_access", f"[tmp_database].(id:{stored_db.id})"
+            )
+        )
+
     def test_hybrid_perm_database(self):
         database = Database(database_name="tmp_database3", sqlalchemy_uri="sqlite://")
 
@@ -411,8 +771,8 @@ class TestRolePermission(SupersetTestCase):
 
         # TODO test slice permission
 
-    @patch("superset.security.manager.g")
     @patch("superset.utils.core.g")
+    @patch("superset.security.manager.g")
     def test_schemas_accessible_by_user_admin(self, mock_sm_g, mock_g):
         mock_g.user = mock_sm_g.user = security_manager.find_user("admin")
         with self.client.application.test_request_context():
@@ -422,8 +782,8 @@ class TestRolePermission(SupersetTestCase):
             )
             self.assertEqual(schemas, ["1", "2", "3"])  # no changes
 
-    @patch("superset.security.manager.g")
     @patch("superset.utils.core.g")
+    @patch("superset.security.manager.g")
     def test_schemas_accessible_by_user_schema_access(self, mock_sm_g, mock_g):
         # User has schema access to the schema 1
         create_schema_perm("[examples].[1]")
@@ -437,8 +797,8 @@ class TestRolePermission(SupersetTestCase):
             self.assertEqual(schemas, ["1"])
         delete_schema_perm("[examples].[1]")
 
-    @patch("superset.security.manager.g")
     @patch("superset.utils.core.g")
+    @patch("superset.security.manager.g")
     def test_schemas_accessible_by_user_datasource_access(self, mock_sm_g, mock_g):
         # User has schema access to the datasource temp_schema.wb_health_population in examples DB.
         mock_g.user = mock_sm_g.user = security_manager.find_user("gamma")
@@ -449,8 +809,8 @@ class TestRolePermission(SupersetTestCase):
             )
             self.assertEqual(schemas, ["temp_schema"])
 
-    @patch("superset.security.manager.g")
     @patch("superset.utils.core.g")
+    @patch("superset.security.manager.g")
     def test_schemas_accessible_by_user_datasource_and_schema_access(
         self, mock_sm_g, mock_g
     ):
@@ -844,6 +1204,54 @@ class TestRolePermission(SupersetTestCase):
             view_str = "\n".join([str(v) for v in unsecured_views])
             raise Exception(f"Some views are not secured:\n{view_str}")
 
+    @patch("superset.utils.core.g")
+    @patch("superset.security.manager.g")
+    def test_get_permissions_gamma_user(self, mock_sm_g, mock_g):
+        session = db.session
+        role_name = "dummy_role"
+        gamma_user = security_manager.find_user(username="gamma")
+        security_manager.add_role(role_name)
+        dummy_role = security_manager.find_role(role_name)
+        gamma_user.roles.append(dummy_role)
+
+        table = (
+            db.session.query(SqlaTable)
+            .filter_by(table_name="wb_health_population")
+            .one()
+        )
+        table_perm = table.perm
+        security_manager.add_permission_role(
+            dummy_role,
+            security_manager.find_permission_view_menu("datasource_access", table_perm),
+        )
+        security_manager.add_permission_role(
+            dummy_role,
+            security_manager.find_permission_view_menu(
+                "database_access", table.database.perm
+            ),
+        )
+
+        session.commit()
+
+        mock_g.user = mock_sm_g.user = security_manager.find_user("gamma")
+        with self.client.application.test_request_context():
+            roles, permissions = security_manager.get_permissions(mock_g.user)
+            assert "dummy_role" in roles
+            assert "Gamma" in roles
+            assert sorted(roles["Gamma"]) == sorted(GAMMA_ROLE_PERMISSIONS["Gamma"])
+            assert sorted(roles["schema_access_role"]) == sorted(
+                GAMMA_ROLE_PERMISSIONS["schema_access_role"]
+            )
+
+            assert len(permissions) == 2
+            assert "[examples].(id:" in permissions["database_access"][0]
+            assert "[examples].[" in permissions["datasource_access"][0]
+
+        # cleanup
+        gamma_user = security_manager.find_user(username="gamma")
+        gamma_user.roles.remove(security_manager.find_role(role_name))
+        session.commit()
+
 
 class TestSecurityManager(SupersetTestCase):
     """
@@ -883,9 +1291,12 @@ class TestSecurityManager(SupersetTestCase):
 
         self.assertFalse(security_manager.can_access_table(database, table))
 
+    @patch("superset.security.SupersetSecurityManager.is_owner")
     @patch("superset.security.SupersetSecurityManager.can_access")
     @patch("superset.security.SupersetSecurityManager.can_access_schema")
-    def test_raise_for_access_datasource(self, mock_can_access_schema, mock_can_access):
+    def test_raise_for_access_datasource(
+        self, mock_can_access_schema, mock_can_access, mock_is_owner
+    ):
         datasource = self.get_datasource_mock()
 
         mock_can_access_schema.return_value = True
@@ -893,12 +1304,14 @@ class TestSecurityManager(SupersetTestCase):
 
         mock_can_access.return_value = False
         mock_can_access_schema.return_value = False
+        mock_is_owner.return_value = False
 
         with self.assertRaises(SupersetSecurityException):
             security_manager.raise_for_access(datasource=datasource)
 
+    @patch("superset.security.SupersetSecurityManager.is_owner")
     @patch("superset.security.SupersetSecurityManager.can_access")
-    def test_raise_for_access_query(self, mock_can_access):
+    def test_raise_for_access_query(self, mock_can_access, mock_is_owner):
         query = Mock(
             database=get_example_database(), schema="bar", sql="SELECT * FROM foo"
         )
@@ -907,14 +1320,16 @@ class TestSecurityManager(SupersetTestCase):
         security_manager.raise_for_access(query=query)
 
         mock_can_access.return_value = False
+        mock_is_owner.return_value = False
 
         with self.assertRaises(SupersetSecurityException):
             security_manager.raise_for_access(query=query)
 
+    @patch("superset.security.SupersetSecurityManager.is_owner")
     @patch("superset.security.SupersetSecurityManager.can_access")
     @patch("superset.security.SupersetSecurityManager.can_access_schema")
     def test_raise_for_access_query_context(
-        self, mock_can_access_schema, mock_can_access
+        self, mock_can_access_schema, mock_can_access, mock_is_owner
     ):
         query_context = Mock(datasource=self.get_datasource_mock())
 
@@ -923,6 +1338,7 @@ class TestSecurityManager(SupersetTestCase):
 
         mock_can_access.return_value = False
         mock_can_access_schema.return_value = False
+        mock_is_owner.return_value = False
 
         with self.assertRaises(SupersetSecurityException):
             security_manager.raise_for_access(query_context=query_context)
@@ -940,9 +1356,12 @@ class TestSecurityManager(SupersetTestCase):
         with self.assertRaises(SupersetSecurityException):
             security_manager.raise_for_access(database=database, table=table)
 
+    @patch("superset.security.SupersetSecurityManager.is_owner")
     @patch("superset.security.SupersetSecurityManager.can_access")
     @patch("superset.security.SupersetSecurityManager.can_access_schema")
-    def test_raise_for_access_viz(self, mock_can_access_schema, mock_can_access):
+    def test_raise_for_access_viz(
+        self, mock_can_access_schema, mock_can_access, mock_is_owner
+    ):
         test_viz = viz.TableViz(self.get_datasource_mock(), form_data={})
 
         mock_can_access_schema.return_value = True
@@ -950,6 +1369,7 @@ class TestSecurityManager(SupersetTestCase):
 
         mock_can_access.return_value = False
         mock_can_access_schema.return_value = False
+        mock_is_owner.return_value = False
 
         with self.assertRaises(SupersetSecurityException):
             security_manager.raise_for_access(viz=test_viz)

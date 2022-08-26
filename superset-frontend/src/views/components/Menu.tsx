@@ -25,6 +25,7 @@ import { Row, Col, Grid } from 'src/components';
 import { MainNav as DropdownMenu, MenuMode } from 'src/components/Menu';
 import { Tooltip } from 'src/components/Tooltip';
 import { Link } from 'react-router-dom';
+import { GenericLink } from 'src/components/GenericLink/GenericLink';
 import Icons from 'src/components/Icons';
 import { useUiConfig } from 'src/components/UiConfigContext';
 import { URL_PARAMS } from 'src/constants';
@@ -155,7 +156,7 @@ const StyledHeader = styled.header`
         .ant-menu > .ant-menu-item > a {
           padding: 0px;
         }
-        .main-nav .ant-menu-submenu-title > svg:nth-child(1) {
+        .main-nav .ant-menu-submenu-title > svg:nth-of-type(1) {
           display: none;
         }
         .ant-menu-item-active > a {
@@ -282,9 +283,15 @@ export function Menu({
             title={brand.tooltip}
             arrowPointAtCenter
           >
-            <a className="navbar-brand" href={brand.path}>
-              <img src={brand.icon} alt={brand.alt} />
-            </a>
+            {isFrontendRoute(window.location.pathname) ? (
+              <GenericLink className="navbar-brand" to={brand.path}>
+                <img src={brand.icon} alt={brand.alt} />
+              </GenericLink>
+            ) : (
+              <a className="navbar-brand" href={brand.path}>
+                <img src={brand.icon} alt={brand.alt} />
+              </a>
+            )}
           </Tooltip>
           {brand.text && (
             <div className="navbar-brand-text">

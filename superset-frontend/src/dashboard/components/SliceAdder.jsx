@@ -43,6 +43,7 @@ import {
 } from 'src/dashboard/util/constants';
 import { slicePropShape } from 'src/dashboard/util/propShapes';
 import { FILTER_BOX_MIGRATION_STATES } from 'src/explore/constants';
+import _ from 'lodash';
 import AddSliceCard from './AddSliceCard';
 import AddSliceDragPreview from './dnd/AddSliceDragPreview';
 import DragDroppable from './dnd/DragDroppable';
@@ -82,7 +83,7 @@ const DEFAULT_SORT_KEY = 'changed_on';
 const MARGIN_BOTTOM = 16;
 const SIDEPANE_HEADER_HEIGHT = 30;
 const SLICE_ADDER_CONTROL_HEIGHT = 64;
-const DEFAULT_CELL_HEIGHT = 112;
+const DEFAULT_CELL_HEIGHT = 128;
 
 const Controls = styled.div`
   display: flex;
@@ -144,7 +145,6 @@ class SliceAdder extends React.Component {
     this.rowRenderer = this.rowRenderer.bind(this);
     this.searchUpdated = this.searchUpdated.bind(this);
     this.handleKeyPress = this.handleKeyPress.bind(this);
-    this.handleChange = this.handleChange.bind(this);
     this.handleSelect = this.handleSelect.bind(this);
   }
 
@@ -194,9 +194,17 @@ class SliceAdder extends React.Component {
     }
   }
 
-  handleChange(ev) {
-    this.searchUpdated(ev.target.value);
-  }
+  handleChange = _.debounce(value => {
+    this.searchUpdated(value);
+
+    const { userId, filterboxMigrationState } = this.props;
+    this.slicesRequest = this.props.fetchFilteredSlices(
+      userId,
+      isFeatureEnabled(FeatureFlag.ENABLE_FILTER_BOX_MIGRATION) &&
+        filterboxMigrationState !== FILTER_BOX_MIGRATION_STATES.SNOOZED,
+      value,
+    );
+  }, 300);
 
   searchUpdated(searchTerm) {
     this.setState(prevState => ({
@@ -216,6 +224,14 @@ class SliceAdder extends React.Component {
         sortBy,
       ),
     }));
+
+    const { userId, filterboxMigrationState } = this.props;
+    this.slicesRequest = this.props.fetchSortedSlices(
+      userId,
+      isFeatureEnabled(FeatureFlag.ENABLE_FILTER_BOX_MIGRATION) &&
+        filterboxMigrationState !== FILTER_BOX_MIGRATION_STATES.SNOOZED,
+      sortBy,
+    );
   }
 
   rowRenderer({ key, index, style }) {
@@ -257,6 +273,7 @@ class SliceAdder extends React.Component {
             visType={cellData.viz_type}
             datasourceUrl={cellData.datasource_url}
             datasourceName={cellData.datasource_name}
+            thumbnailUrl={cellData.thumbnail_url}
             isSelected={isSelected}
           />
         )}
@@ -292,7 +309,7 @@ class SliceAdder extends React.Component {
           <Input
             placeholder={t('Filter your charts')}
             className="search-input"
-            onChange={this.handleChange}
+            onChange={ev => this.handleChange(ev.target.value)}
             onKeyPress={this.handleKeyPress}
             data-test="dashboard-charts-filter-search-input"
           />

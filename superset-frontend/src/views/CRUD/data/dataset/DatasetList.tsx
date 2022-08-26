@@ -31,6 +31,7 @@ import {
   createFetchDistinct,
   createErrorHandler,
 } from 'src/views/CRUD/utils';
+import { getItem, LocalStorageKeys } from 'src/utils/localStorageHelpers';
 import { ColumnObject } from 'src/views/CRUD/data/dataset/types';
 import { useListViewResource } from 'src/views/CRUD/hooks';
 import ConfirmStatusChange from 'src/components/ConfirmStatusChange';
@@ -59,6 +60,7 @@ import ImportModelsModal from 'src/components/ImportModal/index';
 import { isFeatureEnabled, FeatureFlag } from 'src/featureFlags';
 import WarningIconWithTooltip from 'src/components/WarningIconWithTooltip';
 import { isUserAdmin } from 'src/dashboard/util/permissionUtils';
+import { GenericLink } from 'src/components/GenericLink/GenericLink';
 import AddDatasetModal from './AddDatasetModal';
 
 import {
@@ -180,6 +182,12 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
     hasPerm('can_export') && isFeatureEnabled(FeatureFlag.VERSIONED_EXPORT);
 
   const initialSort = SORT_BY;
+  useEffect(() => {
+    const db = getItem(LocalStorageKeys.db, null);
+    if (!loading && db) {
+      setDatasetAddModalOpen(true);
+    }
+  }, [loading]);
 
   const openDatasetEditModal = useCallback(
     ({ id }: Dataset) => {
@@ -282,7 +290,11 @@ const DatasetList: FunctionComponent<DatasetListProps> = ({
             },
           },
         }: any) => {
-          const titleLink = <a href={exploreURL}>{datasetTitle}</a>;
+          const titleLink = (
+            // exploreUrl can be a link to Explore or an external link
+            // in the first case use SPA routing, else use HTML anchor
+            <GenericLink to={exploreURL}>{datasetTitle}</GenericLink>
+          );
           try {
             const parsedExtra = JSON.parse(extra);
             return (

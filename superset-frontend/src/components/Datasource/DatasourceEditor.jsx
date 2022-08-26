@@ -25,7 +25,7 @@ import Alert from 'src/components/Alert';
 import Badge from 'src/components/Badge';
 import shortid from 'shortid';
 import { styled, SupersetClient, t, withTheme } from '@superset-ui/core';
-import { Select, Row, Col } from 'src/components';
+import { Select, AsyncSelect, Row, Col } from 'src/components';
 import { FormLabel } from 'src/components/Form';
 import Button from 'src/components/Button';
 import Tabs from 'src/components/Tabs';
@@ -235,6 +235,7 @@ function ColumnCollectionTable({
                   <TextAreaControl
                     language="markdown"
                     offerEditInModal={false}
+                    resize="vertical"
                   />
                 }
               />
@@ -548,7 +549,7 @@ function OwnersSelector({ datasource, onChange }) {
   }, []);
 
   return (
-    <Select
+    <AsyncSelect
       ariaLabel={t('Select owners')}
       mode="multiple"
       name="owners"
@@ -589,9 +590,6 @@ class DatasourceEditor extends React.PureComponent {
         }),
       },
       errors: [],
-      isDruid:
-        props.datasource.type === 'druid' ||
-        props.datasource.datasource_type === 'druid',
       isSqla:
         props.datasource.datasource_type === 'table' ||
         props.datasource.type === 'table',
@@ -743,7 +741,9 @@ class DatasourceEditor extends React.PureComponent {
       database_name:
         datasource.database.database_name || datasource.database.name,
       schema_name: datasource.schema,
-      table_name: datasource.table_name,
+      table_name: datasource.table_name
+        ? encodeURIComponent(datasource.table_name)
+        : datasource.table_name,
     };
     Object.entries(params).forEach(([key, value]) => {
       // rison can't encode the undefined value
@@ -851,7 +851,11 @@ class DatasourceEditor extends React.PureComponent {
           fieldKey="description"
           label={t('Description')}
           control={
-            <TextAreaControl language="markdown" offerEditInModal={false} />
+            <TextAreaControl
+              language="markdown"
+              offerEditInModal={false}
+              resize="vertical"
+            />
           }
         />
         <Field
@@ -885,6 +889,7 @@ class DatasourceEditor extends React.PureComponent {
                 language="sql"
                 controlId="fetch_values_predicate"
                 minLines={5}
+                resize="vertical"
               />
             }
           />
@@ -904,6 +909,7 @@ class DatasourceEditor extends React.PureComponent {
                 controlId="extra"
                 language="json"
                 offerEditInModal={false}
+                resize="vertical"
               />
             }
           />
@@ -1084,24 +1090,11 @@ class DatasourceEditor extends React.PureComponent {
                         minLines={20}
                         maxLines={20}
                         readOnly={!this.state.isEditMode}
+                        resize="both"
                       />
                     }
                   />
                 </>
-              )}
-              {this.state.isDruid && (
-                <Field
-                  fieldKey="json"
-                  label={t('JSON')}
-                  description={
-                    <div>
-                      {t('The JSON metric or post aggregation definition.')}
-                    </div>
-                  }
-                  control={
-                    <TextAreaControl language="json" offerEditInModal={false} />
-                  }
-                />
               )}
             </div>
           )}
@@ -1250,6 +1243,7 @@ class DatasourceEditor extends React.PureComponent {
                     controlId="warning_markdown"
                     language="markdown"
                     offerEditInModal={false}
+                    resize="vertical"
                   />
                 }
               />
@@ -1264,6 +1258,11 @@ class DatasourceEditor extends React.PureComponent {
           verbose_name: '',
           expression: '',
         })}
+        itemCellProps={{
+          expression: () => ({
+            width: '240px',
+          }),
+        }}
         itemRenderers={{
           metric_name: (v, onChange, _, record) => (
             <FlexRowContainer>
@@ -1293,6 +1292,8 @@ class DatasourceEditor extends React.PureComponent {
               language="sql"
               offerEditInModal={false}
               minLines={5}
+              textAreaStyles={{ minWidth: '200px', maxWidth: '450px' }}
+              resize="both"
             />
           ),
           description: (v, onChange, label) => (

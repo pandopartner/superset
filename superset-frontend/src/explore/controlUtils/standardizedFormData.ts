@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import { omit } from 'lodash';
 import {
   ensureIsArray,
   getChartControlPanelRegistry,
@@ -91,20 +92,33 @@ export class StandardizedFormData {
      * */
     const formData = Object.freeze(sourceFormData);
 
-    // generates an ordered map, the key is viz_type and the value is form_data. the last item is current viz
-    const memorizedFormData: Map<string, QueryFormData> = Array.isArray(
-      formData?.standardizedFormData?.memorizedFormData,
-    )
-      ? new Map(formData.standardizedFormData.memorizedFormData)
-      : new Map();
+    // generates an ordered map, the key is viz_type and the value is form_data. the last item is current viz.
+    const mfd = formData?.standardizedFormData?.memorizedFormData;
     const vizType = formData.viz_type;
-    if (memorizedFormData.has(vizType)) {
-      memorizedFormData.delete(vizType);
+    let memorizedFormData = new Map<string, QueryFormData>();
+    let controls: StandardizedControls;
+    if (
+      Array.isArray(mfd) &&
+      mfd.length > 0 &&
+      formData.datasource === mfd.slice(-1)[0][1]?.datasource
+    ) {
+      memorizedFormData = new Map(
+        formData.standardizedFormData.memorizedFormData,
+      );
+      if (memorizedFormData.has(vizType)) {
+        memorizedFormData.delete(vizType);
+      }
+      memorizedFormData.set(vizType, formData);
+      controls = StandardizedFormData.getStandardizedControls(formData);
+    } else {
+      // reset the `memorizedFormData` if a request between different datasource.
+      const restFormData = omit(
+        formData,
+        'standardizedFormData',
+      ) as QueryFormData;
+      memorizedFormData.set(vizType, restFormData);
+      controls = StandardizedFormData.getStandardizedControls(restFormData);
     }
-    memorizedFormData.set(vizType, formData);
-
-    // calculate sharedControls
-    const controls = StandardizedFormData.getStandardizedControls(formData);
 
     this.sfd = {
       controls,
@@ -145,7 +159,6 @@ export class StandardizedFormData {
     if (this.has(vizType)) {
       return this.get(vizType);
     }
-
     return this.memorizedFormData.slice(-1)[0][1];
   }
 
@@ -187,6 +200,7 @@ export class StandardizedFormData {
      * 4. attach `standardizedFormData` to the initial form_data
      * 5. call formDataOverrides to transform initial form_data if the plugin was defined
      * 6. use final form_data to generate controlsState
+     * 7. to refresh validator message
      * */
     const latestFormData = this.getLatestFormData(targetVizType);
     const publicFormData = {};
@@ -205,6 +219,11 @@ export class StandardizedFormData {
       standardizedFormData: this.serialize(),
     };
 
+    let rv = {
+      formData: targetFormData,
+      controlsState: targetControlsState,
+    };
+
     const controlPanel = getChartControlPanelRegistry().get(targetVizType);
     if (controlPanel?.formDataOverrides) {
       getStandardizedControls().setStandardizedControls(targetFormData);
@@ -216,16 +235,17 @@ export class StandardizedFormData {
         },
       };
       getStandardizedControls().clear();
-
-      return {
+      rv = {
         formData: transformed,
         controlsState: getControlsState(exploreState, transformed),
       };
     }
 
-    return {
-      formData: targetFormData,
-      controlsState: targetControlsState,
-    };
+    // refresh validator message
+    rv.controlsState = getControlsState(
+      { ...exploreState, controls: rv.controlsState },
+      rv.formData,
+    );
+    return rv;
   }
 }

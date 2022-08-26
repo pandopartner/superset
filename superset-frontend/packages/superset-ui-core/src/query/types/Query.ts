@@ -32,28 +32,36 @@ import { PostProcessingRule } from './PostProcessing';
 import { JsonObject } from '../../connection';
 import { TimeGranularity } from '../../time-format';
 
-export type QueryObjectFilterClause = {
+export type BaseQueryObjectFilterClause = {
   col: QueryFormColumn;
   grain?: TimeGranularity;
   isExtra?: boolean;
-} & (
-  | {
-      op: BinaryOperator;
-      val: string | number | boolean;
-    }
-  | {
-      op: SetOperator;
-      val: (string | number | boolean)[];
-    }
-  | {
-      op: UnaryOperator;
-    }
-);
+};
+
+export type BinaryQueryObjectFilterClause = BaseQueryObjectFilterClause & {
+  op: BinaryOperator;
+  val: string | number | boolean;
+  formattedVal?: string;
+};
+
+export type SetQueryObjectFilterClause = BaseQueryObjectFilterClause & {
+  op: SetOperator;
+  val: (string | number | boolean)[];
+  formattedVal?: string[];
+};
+
+export type UnaryQueryObjectFilterClause = BaseQueryObjectFilterClause & {
+  op: UnaryOperator;
+  formattedVal?: string;
+};
+
+export type QueryObjectFilterClause =
+  | BinaryQueryObjectFilterClause
+  | SetQueryObjectFilterClause
+  | UnaryQueryObjectFilterClause;
 
 export type QueryObjectExtras = Partial<{
   /** HAVING condition for Druid */
-  having_druid?: string;
-  druid_time_origin?: string;
   /** HAVING condition for SQLAlchemy */
   having?: string;
   relative_start?: string;
@@ -336,6 +344,7 @@ export type QueryResults = {
     expanded_columns: QueryColumn[];
     selected_columns: QueryColumn[];
     query: { limit: number };
+    query_id?: number;
   };
 };
 
@@ -399,5 +408,9 @@ export enum ContributionType {
   Row = 'row',
   Column = 'column',
 }
+
+export type DatasourceSamplesQuery = {
+  filters?: QueryObjectFilterClause[];
+};
 
 export default {};

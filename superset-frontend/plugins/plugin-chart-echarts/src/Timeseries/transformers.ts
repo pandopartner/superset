@@ -52,7 +52,12 @@ import {
 import { MarkLine1DDataItemOption } from 'echarts/types/src/component/marker/MarkLineModel';
 
 import { extractForecastSeriesContext } from '../utils/forecast';
-import { ForecastSeriesEnum, LegendOrientation, StackType } from '../types';
+import {
+  AxisType,
+  ForecastSeriesEnum,
+  LegendOrientation,
+  StackType,
+} from '../types';
 import { EchartsTimeseriesSeriesType } from './types';
 
 import {
@@ -92,6 +97,7 @@ export function transformSeries(
     sliceId?: number;
     isHorizontal?: boolean;
     lineStyle?: LineStyleOption;
+    queryIndex?: number;
   },
 ): SeriesOption | undefined {
   const { name } = series;
@@ -115,6 +121,7 @@ export function transformSeries(
     seriesKey,
     sliceId,
     isHorizontal = false,
+    queryIndex = 0,
   } = opts;
   const contexts = seriesContexts[name || ''] || [];
   const hasForecast =
@@ -192,6 +199,7 @@ export function transformSeries(
     : { ...opts.lineStyle, opacity };
   return {
     ...series,
+    queryIndex,
     yAxisIndex,
     name: forecastSeries.name,
     itemStyle,
@@ -233,7 +241,10 @@ export function transformSeries(
         if (!formatter) return numericValue;
         if (!stack || isSelectedLegend) return formatter(numericValue);
         if (!onlyTotal) {
-          if (numericValue >= thresholdValues[dataIndex]) {
+          if (
+            numericValue >=
+            (thresholdValues[dataIndex] || Number.MIN_SAFE_INTEGER)
+          ) {
             return formatter(numericValue);
           }
           return '';
@@ -250,6 +261,8 @@ export function transformSeries(
 export function transformFormulaAnnotation(
   layer: FormulaAnnotationLayer,
   data: TimeseriesDataRecord[],
+  xAxisCol: string,
+  xAxisType: AxisType,
   colorScale: CategoricalColorScale,
   sliceId?: number,
 ): SeriesOption {
@@ -267,7 +280,7 @@ export function transformFormulaAnnotation(
     },
     type: 'line',
     smooth: true,
-    data: evalFormula(layer, data),
+    data: evalFormula(layer, data, xAxisCol, xAxisType),
     symbolSize: 0,
   };
 }
