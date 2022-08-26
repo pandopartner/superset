@@ -60,9 +60,10 @@ class SelectDataRequired(DataRequired):  # pylint: disable=too-few-public-method
     field_flags = ()
 
 
-class TableColumnInlineView(
-    CompactCRUDMixin, SupersetModelView
-):  # pylint: disable=too-many-ancestors
+class TableColumnInlineView(  # pylint: disable=too-many-ancestors
+    CompactCRUDMixin,
+    SupersetModelView,
+):
     datamodel = SQLAInterface(models.TableColumn)
     # TODO TODO, review need for this on related_views
     class_permission_name = "Dataset"
@@ -99,6 +100,7 @@ class TableColumnInlineView(
         "groupby",
         "filterable",
         "is_dttm",
+        "extra",
     ]
     page_size = 500
     description_columns = {
@@ -194,9 +196,10 @@ class TableColumnInlineView(
     edit_form_extra_fields = add_form_extra_fields
 
 
-class SqlMetricInlineView(
-    CompactCRUDMixin, SupersetModelView
-):  # pylint: disable=too-many-ancestors
+class SqlMetricInlineView(  # pylint: disable=too-many-ancestors
+    CompactCRUDMixin,
+    SupersetModelView,
+):
     datamodel = SQLAInterface(models.SqlMetric)
     class_permission_name = "Dataset"
     method_permission_name = MODEL_VIEW_RW_METHOD_PERMISSION_MAP
@@ -207,7 +210,7 @@ class SqlMetricInlineView(
     add_title = _("Add Metric")
     edit_title = _("Edit Metric")
 
-    list_columns = ["metric_name", "verbose_name", "metric_type"]
+    list_columns = ["metric_name", "verbose_name", "metric_type", "extra"]
     edit_columns = [
         "metric_name",
         "description",
@@ -278,9 +281,9 @@ class RowLevelSecurityListWidget(
         super().__init__(**kwargs)
 
 
-class RowLevelSecurityFiltersModelView(
+class RowLevelSecurityFiltersModelView(  # pylint: disable=too-many-ancestors
     SupersetModelView, DeleteMixin
-):  # pylint: disable=too-many-ancestors
+):
     datamodel = SQLAInterface(models.RowLevelSecurityFilter)
 
     list_widget = cast(SupersetListWidget, RowLevelSecurityListWidget)
@@ -533,7 +536,7 @@ class TableModelView(  # pylint: disable=too-many-ancestors
         resp = super().edit(pk)
         if isinstance(resp, str):
             return resp
-        return redirect("/superset/explore/table/{}/".format(pk))
+        return redirect("/explore/?dataset_type=table&dataset_id={}".format(pk))
 
     @expose("/list/")
     @has_access

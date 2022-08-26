@@ -16,14 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { Dataset } from '@superset-ui/chart-controls';
 import { JsonObject, Query, QueryResponse } from '@superset-ui/core';
 import { SupersetError } from 'src/components/ErrorMessage/types';
 import { UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
 import { ToastType } from 'src/components/MessageToasts/types';
-import { ExploreRootState } from 'src/explore/types';
+import { RootState } from 'src/dashboard/types';
+import { DropdownButtonProps } from 'src/components/DropdownButton';
+import { ButtonProps } from 'src/components/Button';
 
-export type ExploreDatasource = Dataset | QueryResponse;
+export type QueryButtonProps = DropdownButtonProps | ButtonProps;
 
 // Object as Dictionary (associative array) with Query id as the key and type Query as the value
 export type QueryDictionary = {
@@ -31,16 +32,26 @@ export type QueryDictionary = {
 };
 
 export interface QueryEditor {
+  id: string;
   dbId?: number;
-  title: string;
+  name: string;
   schema: string;
   autorun: boolean;
   sql: string;
   remoteId: number | null;
+  tableOptions: any[];
+  schemaOptions?: SchemaOption[];
+  functionNames: string[];
   validationResult?: {
     completed: boolean;
     errors: SupersetError[];
   };
+  hideLeftBar?: boolean;
+  latestQueryId?: string | null;
+  templateParams?: string;
+  selectedText?: string;
+  queryLimit?: number;
+  description?: string;
 }
 
 export type toastState = {
@@ -58,13 +69,15 @@ export type SqlLabRootState = {
     databases: Record<string, any>;
     dbConnect: boolean;
     offline: boolean;
-    queries: Query[];
+    queries: Record<string, Query>;
     queryEditors: QueryEditor[];
     tabHistory: string[]; // default is activeTab ? [activeTab.id.toString()] : []
     tables: Record<string, any>[];
     queriesLastUpdate: number;
     user: UserWithPermissionsAndRoles;
     errorMessage: string | null;
+    unsavedQueryEditor: Partial<QueryEditor>;
+    queryCostEstimates?: Record<string, QueryCostEstimate>;
   };
   localStorageUsageInKilobytes: number;
   messageToasts: toastState[];
@@ -74,7 +87,7 @@ export type SqlLabRootState = {
   };
 };
 
-export type SqlLabExploreRootState = SqlLabRootState | ExploreRootState;
+export type SqlLabExploreRootState = SqlLabRootState | RootState;
 
 export const getInitialState = (state: SqlLabExploreRootState) => {
   if (state.hasOwnProperty('sqlLab')) {
@@ -84,10 +97,8 @@ export const getInitialState = (state: SqlLabExploreRootState) => {
     return user;
   }
 
-  const {
-    explore: { user },
-  } = state as ExploreRootState;
-  return user;
+  const { user } = state as RootState;
+  return user as UserWithPermissionsAndRoles;
 };
 
 export enum DatasetRadioState {
@@ -113,4 +124,16 @@ export interface DatasetOptionAutocomplete {
   value: string;
   datasetId: number;
   owners: [DatasetOwner];
+}
+
+export interface SchemaOption {
+  value: string;
+  label: string;
+  title: string;
+}
+
+export interface QueryCostEstimate {
+  completed: string;
+  cost: Record<string, any>[];
+  error: string;
 }

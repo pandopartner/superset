@@ -19,7 +19,7 @@
 /* eslint no-undef: 'error' */
 /* eslint no-param-reassign: ["error", { "props": false }] */
 import moment from 'moment';
-import { t, SupersetClient } from '@superset-ui/core';
+import { t, SupersetClient, isDefined } from '@superset-ui/core';
 import { getControlsState } from 'src/explore/store';
 import { isFeatureEnabled, FeatureFlag } from 'src/featureFlags';
 import {
@@ -598,10 +598,32 @@ export function refreshChart(chartKey, force, dashboardId) {
   };
 }
 
-export const getDatasetSamples = async (datasetId, force) => {
-  const endpoint = `/api/v1/dataset/${datasetId}/samples?force=${force}`;
+export const getDatasourceSamples = async (
+  datasourceType,
+  datasourceId,
+  force,
+  jsonPayload,
+  perPage,
+  page,
+) => {
   try {
-    const response = await SupersetClient.get({ endpoint });
+    const searchParams = {
+      force,
+      datasource_type: datasourceType,
+      datasource_id: datasourceId,
+    };
+
+    if (isDefined(perPage) && isDefined(page)) {
+      searchParams.per_page = perPage;
+      searchParams.page = page;
+    }
+
+    const response = await SupersetClient.post({
+      endpoint: '/datasource/samples',
+      jsonPayload,
+      searchParams,
+    });
+
     return response.json.result;
   } catch (err) {
     const clientError = await getClientErrorObject(err);

@@ -22,7 +22,7 @@ from io import BytesIO
 from typing import Any, Dict, List, Optional
 from zipfile import ZipFile
 
-from flask import g, request, Response, send_file
+from flask import request, Response, send_file
 from flask_appbuilder.api import expose, protect, rison, safe
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from marshmallow import ValidationError
@@ -261,7 +261,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
         except ValidationError as error:
             return self.response_400(message=error.messages)
         try:
-            new_model = CreateDatabaseCommand(g.user, item).run()
+            new_model = CreateDatabaseCommand(item).run()
             # Return censored version for sqlalchemy URI
             item["sqlalchemy_uri"] = new_model.sqlalchemy_uri
             item["expose_in_sqllab"] = new_model.expose_in_sqllab
@@ -342,7 +342,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
         except ValidationError as error:
             return self.response_400(message=error.messages)
         try:
-            changed_model = UpdateDatabaseCommand(g.user, pk, item).run()
+            changed_model = UpdateDatabaseCommand(pk, item).run()
             # Return censored version for sqlalchemy URI
             item["sqlalchemy_uri"] = changed_model.sqlalchemy_uri
             if changed_model.parameters:
@@ -404,7 +404,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
               $ref: '#/components/responses/500'
         """
         try:
-            DeleteDatabaseCommand(g.user, pk).run()
+            DeleteDatabaseCommand(pk).run()
             return self.response(200, message="OK")
         except DatabaseNotFoundError:
             return self.response_404()
@@ -662,7 +662,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
         self.incr_stats("success", self.select_star.__name__)
         return self.response(200, result=result)
 
-    @expose("/test_connection", methods=["POST"])
+    @expose("/test_connection/", methods=["POST"])
     @protect()
     @statsd_metrics
     @event_logger.log_this_with_context(
@@ -706,7 +706,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
         # This validates custom Schema with custom validations
         except ValidationError as error:
             return self.response_400(message=error.messages)
-        TestConnectionDatabaseCommand(g.user, item).run()
+        TestConnectionDatabaseCommand(item).run()
         return self.response(200, message="OK")
 
     @expose("/<int:pk>/related_objects/", methods=["GET"])
@@ -778,7 +778,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
             },
         )
 
-    @expose("/<int:pk>/validate_sql", methods=["POST"])
+    @expose("/<int:pk>/validate_sql/", methods=["POST"])
     @protect()
     @statsd_metrics
     @event_logger.log_this_with_context(
@@ -1121,7 +1121,7 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
 
         return self.response(200, databases=response)
 
-    @expose("/validate_parameters", methods=["POST"])
+    @expose("/validate_parameters/", methods=["POST"])
     @protect()
     @statsd_metrics
     @event_logger.log_this_with_context(
@@ -1174,6 +1174,6 @@ class DatabaseRestApi(BaseSupersetModelRestApi):
             ]
             raise InvalidParametersError(errors) from ex
 
-        command = ValidateDatabaseParametersCommand(g.user, payload)
+        command = ValidateDatabaseParametersCommand(payload)
         command.run()
         return self.response(200, message="OK")

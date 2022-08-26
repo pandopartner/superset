@@ -25,11 +25,16 @@ import fetchMock from 'fetch-mock';
 import * as chartAction from 'src/components/Chart/chartAction';
 import * as downloadAsImage from 'src/utils/downloadAsImage';
 import * as exploreUtils from 'src/explore/exploreUtils';
+import { FeatureFlag } from '@superset-ui/core';
 import ExploreHeader from '.';
 
 const chartEndpoint = 'glob:*api/v1/chart/*';
 
 fetchMock.get(chartEndpoint, { json: 'foo' });
+
+window.featureFlags = {
+  [FeatureFlag.EMBEDDABLE_CHARTS]: true,
+};
 
 const createProps = () => ({
   chart: {
@@ -88,7 +93,7 @@ const createProps = () => ({
     ],
     slice_id: 318,
     slice_name: 'Age distribution of respondents',
-    slice_url: '/superset/explore/?form_data=%7B%22slice_id%22%3A%20318%7D',
+    slice_url: '/explore/?form_data=%7B%22slice_id%22%3A%20318%7D',
   },
   slice_name: 'Age distribution of respondents',
   actions: {

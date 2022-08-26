@@ -21,7 +21,7 @@ from io import BytesIO
 from typing import Any, Optional
 from zipfile import ZipFile
 
-from flask import g, redirect, request, Response, send_file, url_for
+from flask import redirect, request, Response, send_file, url_for
 from flask_appbuilder.api import expose, protect, rison, safe
 from flask_appbuilder.hooks import before_request
 from flask_appbuilder.models.sqla.interface import SQLAInterface
@@ -114,16 +114,20 @@ class ChartRestApi(BaseSupersetModelRestApi):
         "cache_timeout",
         "certified_by",
         "certification_details",
+        "changed_on_delta_humanized",
         "dashboards.dashboard_title",
         "dashboards.id",
         "dashboards.json_metadata",
         "description",
+        "id",
         "owners.first_name",
         "owners.id",
         "owners.last_name",
         "owners.username",
         "params",
         "slice_name",
+        "thumbnail_url",
+        "url",
         "viz_type",
         "query_context",
         "is_managed_externally",
@@ -285,7 +289,7 @@ class ChartRestApi(BaseSupersetModelRestApi):
         except ValidationError as error:
             return self.response_400(message=error.messages)
         try:
-            new_model = CreateChartCommand(g.user, item).run()
+            new_model = CreateChartCommand(item).run()
             return self.response(201, id=new_model.id, result=item)
         except ChartInvalidError as ex:
             return self.response_422(message=ex.normalized_messages())
@@ -356,7 +360,7 @@ class ChartRestApi(BaseSupersetModelRestApi):
         except ValidationError as error:
             return self.response_400(message=error.messages)
         try:
-            changed_model = UpdateChartCommand(g.user, pk, item).run()
+            changed_model = UpdateChartCommand(pk, item).run()
             response = self.response(200, id=changed_model.id, result=item)
         except ChartNotFoundError:
             response = self.response_404()
@@ -416,7 +420,7 @@ class ChartRestApi(BaseSupersetModelRestApi):
               $ref: '#/components/responses/500'
         """
         try:
-            DeleteChartCommand(g.user, pk).run()
+            DeleteChartCommand(pk).run()
             return self.response(200, message="OK")
         except ChartNotFoundError:
             return self.response_404()
@@ -476,7 +480,7 @@ class ChartRestApi(BaseSupersetModelRestApi):
         """
         item_ids = kwargs["rison"]
         try:
-            BulkDeleteChartCommand(g.user, item_ids).run()
+            BulkDeleteChartCommand(item_ids).run()
             return self.response(
                 200,
                 message=ngettext(

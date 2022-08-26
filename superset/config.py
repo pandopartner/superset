@@ -30,6 +30,7 @@ import re
 import sys
 from collections import OrderedDict
 from datetime import timedelta
+from email.mime.multipart import MIMEMultipart
 from typing import (
     Any,
     Callable,
@@ -102,6 +103,7 @@ PACKAGE_JSON_FILE = pkg_resources.resource_filename(
 #     "rel": "icon"
 # },
 FAVICONS = [{"href": "/static/assets/images/favicon.png"}]
+TAB_TITLE = None
 
 
 def _try_json_readversion(filepath: str) -> Optional[str]:
@@ -201,8 +203,31 @@ SQLALCHEMY_CUSTOM_PASSWORD_STORE = None
 # to the DB.
 #
 # Note: the default impl leverages SqlAlchemyUtils' EncryptedType, which defaults
-#  to AES-128 under the covers using the app's SECRET_KEY as key material.
+#  to AesEngine that uses AES-128 under the covers using the app's SECRET_KEY
+#  as key material. Do note that AesEngine allows for queryability over the
+#  encrypted fields.
 #
+#  To change the default engine you need to define your own adapter:
+#
+# e.g.:
+#
+# class AesGcmEncryptedAdapter(  # pylint: disable=too-few-public-methods
+#     AbstractEncryptedFieldAdapter
+# ):
+#     def create(
+#         self,
+#         app_config: Optional[Dict[str, Any]],
+#         *args: List[Any],
+#         **kwargs: Optional[Dict[str, Any]],
+#     ) -> TypeDecorator:
+#         if app_config:
+#             return EncryptedType(
+#                 *args, app_config["SECRET_KEY"], engine=AesGcmEngine, **kwargs
+#             )
+#         raise Exception("Missing app_config kwarg")
+#
+#
+#  SQLALCHEMY_ENCRYPTED_FIELD_TYPE_ADAPTER = AesGcmEncryptedAdapter
 SQLALCHEMY_ENCRYPTED_FIELD_TYPE_ADAPTER = (  # pylint: disable=invalid-name
     SQLAlchemyUtilsAdapter
 )
@@ -236,6 +261,9 @@ SHOW_STACKTRACE = True
 # When proxying to a different port, set "x_port" to 0 to avoid downstream issues.
 ENABLE_PROXY_FIX = False
 PROXY_FIX_CONFIG = {"x_for": 1, "x_proto": 1, "x_host": 1, "x_port": 1, "x_prefix": 1}
+
+# Configuration for scheduling queries from SQL Lab.
+SCHEDULED_QUERIES: Dict[str, Any] = {}
 
 # ------------------------------
 # GLOBALS FOR APP Builder
@@ -426,12 +454,16 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     "GENERIC_CHART_AXES": False,
     "ALLOW_ADHOC_SUBQUERY": False,
     "USE_ANALAGOUS_COLORS": True,
+    "DASHBOARD_EDIT_CHART_IN_NEW_TAB": False,
     # Apply RLS rules to SQL Lab queries. This requires parsing and manipulating the
     # query, and might break queries and/or allow users to bypass RLS. Use with care!
     "RLS_IN_SQLLAB": False,
     # Enable caching per impersonation key (e.g username) in a datasource where user
     # impersonation is enabled
     "CACHE_IMPERSONATION": False,
+    # Enable sharing charts with embedding
+    "EMBEDDABLE_CHARTS": True,
+    "DRILL_TO_DETAIL": False,
 }
 
 # Feature flags may also be set via 'SUPERSET_FEATURE_' prefixed environment vars.
@@ -997,7 +1029,13 @@ BLUEPRINTS: List[Blueprint] = []
 # into a proxied one
 
 
-TRACKING_URL_TRANSFORMER = lambda x: x
+# Transform SQL query tracking url for Hive and Presto engines. You may also
+# access information about the query itself by adding a second parameter
+# to your transformer function, e.g.:
+#   TRACKING_URL_TRANSFORMER = (
+#       lambda url, query: url if is_fresh(query) else None
+#   )
+TRACKING_URL_TRANSFORMER = lambda url: url
 
 
 # Interval between consecutive polls when using Hive Engine
@@ -1062,6 +1100,15 @@ def SQL_QUERY_MUTATOR(  # pylint: disable=invalid-name,unused-argument
     return sql
 
 
+# This allows for a user to add header data to any outgoing emails. For example,
+# if you need to include metadata in the header or you want to change the specifications
+# of the email title, header, or sender.
+def EMAIL_HEADER_MUTATOR(  # pylint: disable=invalid-name,unused-argument
+    msg: MIMEMultipart, **kwargs: Any
+) -> MIMEMultipart:
+    return msg
+
+
 # This auth provider is used by background (offline) tasks that need to access
 # protected resources. Can be overridden by end users in order to support
 # custom auth mechanisms
@@ -1083,6 +1130,9 @@ ALERT_REPORTS_WORKING_SOFT_TIME_OUT_LAG = int(timedelta(seconds=1).total_seconds
 # If set to true no notification is sent, the worker will just log a message.
 # Useful for debugging
 ALERT_REPORTS_NOTIFICATION_DRY_RUN = False
+# Max tries to run queries to prevent false errors caused by transient errors
+# being returned to users. Set to a value >1 to enable retries.
+ALERT_REPORTS_QUERY_EXECUTION_MAX_TRIES = 1
 
 # A custom prefix to use on all Alerts & Reports emails
 EMAIL_REPORTS_SUBJECT_PREFIX = "[Report] "

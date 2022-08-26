@@ -26,13 +26,14 @@ from sqlalchemy.orm import Session
 from superset.dao.base import BaseDAO
 from superset.dao.exceptions import DAOCreateFailedError, DAODeleteFailedError
 from superset.extensions import db
-from superset.models.reports import (
+from superset.reports.models import (
     ReportExecutionLog,
     ReportRecipients,
     ReportSchedule,
     ReportScheduleType,
     ReportState,
 )
+from superset.utils.core import get_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -110,20 +111,19 @@ class ReportScheduleDAO(BaseDAO):
             if commit:
                 db.session.commit()
         except SQLAlchemyError as ex:
-            if commit:
-                db.session.rollback()
+            db.session.rollback()
             raise DAODeleteFailedError(str(ex)) from ex
 
     @staticmethod
     def validate_unique_creation_method(
-        user_id: int, dashboard_id: Optional[int] = None, chart_id: Optional[int] = None
+        dashboard_id: Optional[int] = None, chart_id: Optional[int] = None
     ) -> bool:
         """
         Validate if the user already has a chart or dashboard
         with a report attached form the self subscribe reports
         """
 
-        query = db.session.query(ReportSchedule).filter_by(created_by_fk=user_id)
+        query = db.session.query(ReportSchedule).filter_by(created_by_fk=get_user_id())
         if dashboard_id is not None:
             query = query.filter(ReportSchedule.dashboard_id == dashboard_id)
 
@@ -154,7 +154,7 @@ class ReportScheduleDAO(BaseDAO):
         return found_id is None or found_id == expect_id
 
     @classmethod
-    def create(cls, properties: Dict[str, Any], commit: bool = True) -> Model:
+    def create(cls, properties: Dict[str, Any], commit: bool = True) -> ReportSchedule:
         """
         create a report schedule and nested recipients
         :raises: DAOCreateFailedError
@@ -186,7 +186,7 @@ class ReportScheduleDAO(BaseDAO):
     @classmethod
     def update(
         cls, model: Model, properties: Dict[str, Any], commit: bool = True
-    ) -> Model:
+    ) -> ReportSchedule:
         """
         create a report schedule and nested recipients
         :raises: DAOCreateFailedError
@@ -323,6 +323,5 @@ class ReportScheduleDAO(BaseDAO):
                 session.commit()
             return row_count
         except SQLAlchemyError as ex:
-            if commit:
-                session.rollback()
+            session.rollback()
             raise DAODeleteFailedError(str(ex)) from ex
