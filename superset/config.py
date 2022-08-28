@@ -529,8 +529,7 @@ COMMON_BOOTSTRAP_OVERRIDES_FUNC: Callable[
 #     }]
 
 # This is merely a default
-EXTRA_CATEGORICAL_COLOR_SCHEMES: List[Dict[str, Any]] = []
-EXTRA_CATEGORICAL_COLOR_SCHEMES = [
+EXTRA_CATEGORICAL_COLOR_SCHEMES: List[Dict[str, Any]] = [
     {
         "id": 'pandopartner',
         "description": 'colors from PandoPartner style guide',
