@@ -176,7 +176,7 @@ multidict==5.1.0
     # via
     #   aiohttp
     #   yarl
-numpy==1.22.1
+numpy==1.23.5
     # via
     #   apache-superset
     #   pandas
@@ -303,7 +303,7 @@ wtforms-json==0.3.3
     # via apache-superset
 yarl==1.6.3
     # via aiohttp
-cython==0.29.32
+# cython==0.29.32
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
