@@ -176,7 +176,7 @@ multidict==5.1.0
     # via
     #   aiohttp
     #   yarl
-numpy==1.23.5
+numpy==1.22.1
     # via
     #   apache-superset
     #   pandas
