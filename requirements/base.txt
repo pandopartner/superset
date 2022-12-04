@@ -303,7 +303,7 @@ wtforms-json==0.3.3
     # via apache-superset
 yarl==1.6.3
     # via aiohttp
-cython==0.29.32
+# cython==0.29.32
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
