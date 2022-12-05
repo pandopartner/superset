@@ -58,7 +58,7 @@ setup(
     description="A modern, enterprise-ready business intelligence web application",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    # version=version_string,
+    version=version_string,
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
