@@ -185,7 +185,6 @@ class TestDatabaseApi(SupersetTestCase):
             "allow_cvas",
             "allow_dml",
             "allow_file_upload",
-            "allow_multi_schema_metadata_fetch",
             "allow_run_async",
             "allows_cost_estimate",
             "allows_subquery",
@@ -196,6 +195,7 @@ class TestDatabaseApi(SupersetTestCase):
             "created_by",
             "database_name",
             "disable_data_preview",
+            "engine_information",
             "explore_database_id",
             "expose_in_sqllab",
             "extra",
@@ -374,7 +374,7 @@ class TestDatabaseApi(SupersetTestCase):
             "database_name": "test-create-database-invalid-json",
             "sqlalchemy_uri": example_db.sqlalchemy_uri_decrypted,
             "configuration_method": ConfigurationMethod.SQLALCHEMY_FORM,
-            "encrypted_extra": '{"A": "a", "B", "C"}',
+            "masked_encrypted_extra": '{"A": "a", "B", "C"}',
             "extra": '["A": "a", "B", "C"]',
         }
 
@@ -383,7 +383,7 @@ class TestDatabaseApi(SupersetTestCase):
         response = json.loads(rv.data.decode("utf-8"))
         expected_response = {
             "message": {
-                "encrypted_extra": [
+                "masked_encrypted_extra": [
                     "Field cannot be decoded by JSON. Expecting ':' "
                     "delimiter: line 1 column 15 (char 14)"
                 ],
@@ -525,11 +525,55 @@ class TestDatabaseApi(SupersetTestCase):
         self.login(username="admin")
         response = self.client.post(uri, json=database_data)
         response_data = json.loads(response.data.decode("utf-8"))
-        expected_response = {
-            "message": "Connection failed, please check your connection settings"
+        superset_error_mysql = SupersetError(
+            message='Either the username "superset" or the password is incorrect.',
+            error_type="CONNECTION_ACCESS_DENIED_ERROR",
+            level="error",
+            extra={
+                "engine_name": "MySQL",
+                "invalid": ["username", "password"],
+                "issue_codes": [
+                    {
+                        "code": 1014,
+                        "message": (
+                            "Issue 1014 - Either the username or the password is wrong."
+                        ),
+                    },
+                    {
+                        "code": 1015,
+                        "message": (
+                            "Issue 1015 - Issue 1015 - Either the database is spelled incorrectly or does not exist."
+                        ),
+                    },
+                ],
+            },
+        )
+        superset_error_postgres = SupersetError(
+            message='The password provided for username "superset" is incorrect.',
+            error_type="CONNECTION_INVALID_PASSWORD_ERROR",
+            level="error",
+            extra={
+                "engine_name": "PostgreSQL",
+                "invalid": ["username", "password"],
+                "issue_codes": [
+                    {
+                        "code": 1013,
+                        "message": (
+                            "Issue 1013 - The password provided when connecting to a database is not valid."
+                        ),
+                    }
+                ],
+            },
+        )
+        expected_response_mysql = {"errors": [dataclasses.asdict(superset_error_mysql)]}
+        expected_response_postgres = {
+            "errors": [dataclasses.asdict(superset_error_postgres)]
         }
-        self.assertEqual(response.status_code, 422)
-        self.assertEqual(response_data, expected_response)
+        self.assertEqual(response.status_code, 500)
+        if example_db.backend == "mysql":
+            self.assertEqual(response_data, expected_response_mysql)
+        else:
+            self.assertEqual(response_data, expected_response_postgres)
 
     def test_update_database(self):
         """
@@ -1353,7 +1397,7 @@ class TestDatabaseApi(SupersetTestCase):
         # validate that the endpoint works with the password-masked sqlalchemy uri
         data = {
             "database_name": "examples",
-            "encrypted_extra": "{}",
+            "masked_encrypted_extra": "{}",
             "extra": json.dumps(extra),
             "impersonate_user": False,
             "sqlalchemy_uri": example_db.safe_sqlalchemy_uri(),
@@ -1425,7 +1469,7 @@ class TestDatabaseApi(SupersetTestCase):
         expected_response = {
             "errors": [
                 {
-                    "message": "Could not load database driver: AzureSynapseSpec",
+                    "message": "Could not load database driver: MssqlEngineSpec",
                     "error_type": "GENERIC_COMMAND_ERROR",
                     "level": "warning",
                     "extra": {
@@ -1516,7 +1560,7 @@ class TestDatabaseApi(SupersetTestCase):
         url = "api/v1/database/test_connection/"
         rv = self.post_assert_metric(url, data, "test_connection")
 
-        assert rv.status_code == 422
+        assert rv.status_code == 500
         assert rv.headers["Content-Type"] == "application/json; charset=utf-8"
         response = json.loads(rv.data.decode("utf-8"))
         expected_response = {"errors": [dataclasses.asdict(superset_error)]}
@@ -1942,6 +1986,9 @@ class TestDatabaseApi(SupersetTestCase):
                     },
                     "preferred": True,
                     "sqlalchemy_uri_placeholder": "postgresql://user:password@host:port/dbname[?key=value&key=value...]",
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
                 {
                     "available_drivers": ["bigquery"],
@@ -1961,6 +2008,9 @@ class TestDatabaseApi(SupersetTestCase):
                     },
                     "preferred": True,
                     "sqlalchemy_uri_placeholder": "bigquery://{project_id}",
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
                 {
                     "available_drivers": ["psycopg2"],
@@ -2009,6 +2059,9 @@ class TestDatabaseApi(SupersetTestCase):
                     },
                     "preferred": False,
                     "sqlalchemy_uri_placeholder": "redshift+psycopg2://user:password@host:port/dbname[?key=value&key=value...]",
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
                 {
                     "available_drivers": ["apsw"],
@@ -2028,6 +2081,9 @@ class TestDatabaseApi(SupersetTestCase):
                     },
                     "preferred": False,
                     "sqlalchemy_uri_placeholder": "gsheets://",
+                    "engine_information": {
+                        "supports_file_upload": False,
+                    },
                 },
                 {
                     "available_drivers": ["mysqlconnector", "mysqldb"],
@@ -2076,12 +2132,18 @@ class TestDatabaseApi(SupersetTestCase):
                     },
                     "preferred": False,
                     "sqlalchemy_uri_placeholder": "mysql://user:password@host:port/dbname[?key=value&key=value...]",
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
                 {
                     "available_drivers": [""],
                     "engine": "hana",
                     "name": "SAP HANA",
                     "preferred": False,
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
             ]
         }
@@ -2109,12 +2171,18 @@ class TestDatabaseApi(SupersetTestCase):
                     "engine": "mysql",
                     "name": "MySQL",
                     "preferred": True,
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
                 {
                     "available_drivers": [""],
                     "engine": "hana",
                     "name": "SAP HANA",
                     "preferred": False,
+                    "engine_information": {
+                        "supports_file_upload": True,
+                    },
                 },
             ]
         }

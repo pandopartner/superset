@@ -32,9 +32,22 @@ import {
 } from '../../reduxUtils';
 
 function alterUnsavedQueryEditorState(state, updatedState, id) {
+  if (state.tabHistory[state.tabHistory.length - 1] !== id) {
+    const { queryEditors } = alterInArr(
+      state,
+      'queryEditors',
+      { id },
+      updatedState,
+    );
+    return {
+      queryEditors,
+    };
+  }
   return {
-    ...(state.unsavedQueryEditor.id === id && state.unsavedQueryEditor),
-    ...(id ? { id, ...updatedState } : state.unsavedQueryEditor),
+    unsavedQueryEditor: {
+      ...(state.unsavedQueryEditor.id === id && state.unsavedQueryEditor),
+      ...(id ? { id, ...updatedState } : state.unsavedQueryEditor),
+    },
   };
 }
 
@@ -56,8 +69,8 @@ export default function sqlLabReducer(state = {}, action) {
       return addToArr(newState, 'queryEditors', action.queryEditor);
     },
     [actions.QUERY_EDITOR_SAVED]() {
-      const { query, result } = action;
-      const existing = state.queryEditors.find(qe => qe.id === query.id);
+      const { query, result, clientId } = action;
+      const existing = state.queryEditors.find(qe => qe.id === clientId);
       return alterInArr(
         state,
         'queryEditors',
@@ -110,7 +123,12 @@ export default function sqlLabReducer(state = {}, action) {
       );
     },
     [actions.REMOVE_QUERY_EDITOR]() {
-      let newState = removeFromArr(state, 'queryEditors', action.queryEditor);
+      const queryEditor = {
+        ...action.queryEditor,
+        ...(action.queryEditor.id === state.unsavedQueryEditor.id &&
+          state.unsavedQueryEditor),
+      };
+      let newState = removeFromArr(state, 'queryEditors', queryEditor);
       // List of remaining queryEditor ids
       const qeIds = newState.queryEditors.map(qe => qe.id);
 
@@ -127,10 +145,19 @@ export default function sqlLabReducer(state = {}, action) {
 
       // Remove associated table schemas
       const tables = state.tables.filter(
-        table => table.queryEditorId !== action.queryEditor.id,
+        table => table.queryEditorId !== queryEditor.id,
       );
 
-      newState = { ...newState, tabHistory, tables, queries };
+      newState = {
+        ...newState,
+        tabHistory,
+        tables,
+        queries,
+        unsavedQueryEditor: {
+          ...(action.queryEditor.id !== state.unsavedQueryEditor.id &&
+            state.unsavedQueryEditor),
+        },
+      };
       return newState;
     },
     [actions.REMOVE_QUERY]() {
@@ -213,7 +240,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.START_QUERY_VALIDATION]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             validationResult: {
@@ -245,7 +272,7 @@ export default function sqlLabReducer(state = {}, action) {
       // Otherwise, persist the results on the queryEditor state
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             validationResult: {
@@ -353,7 +380,7 @@ export default function sqlLabReducer(state = {}, action) {
 
       return {
         ...newState,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             latestQueryId: action.query.id,
@@ -435,7 +462,7 @@ export default function sqlLabReducer(state = {}, action) {
         );
         return {
           ...(action.queryEditor.id === state.unsavedQueryEditor.id
-            ? alterInObject(
+            ? alterInArr(
                 mergeUnsavedState,
                 'queryEditors',
                 action.queryEditor,
@@ -524,7 +551,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SETDB]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             dbId: action.dbId,
@@ -536,7 +563,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_FUNCTION_NAMES]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             functionNames: action.functionNames,
@@ -548,7 +575,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_SCHEMA]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             schema: action.schema,
@@ -560,7 +587,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_SCHEMA_OPTIONS]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             schemaOptions: action.options,
@@ -572,7 +599,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_TABLE_OPTIONS]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             tableOptions: action.options,
@@ -584,7 +611,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_TITLE]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             name: action.name,
@@ -596,7 +623,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_SQL]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             sql: action.sql,
@@ -608,7 +635,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_QUERY_LIMIT]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             queryLimit: action.queryLimit,
@@ -620,7 +647,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_TEMPLATE_PARAMS]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             templateParams: action.templateParams,
@@ -632,7 +659,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_SELECTED_TEXT]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             selectedText: action.sql,
@@ -644,7 +671,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_SET_AUTORUN]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             autorun: action.autorun,
@@ -656,7 +683,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_PERSIST_HEIGHT]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             northPercent: action.northPercent,
@@ -669,7 +696,7 @@ export default function sqlLabReducer(state = {}, action) {
     [actions.QUERY_EDITOR_TOGGLE_LEFT_BAR]() {
       return {
         ...state,
-        unsavedQueryEditor: alterUnsavedQueryEditorState(
+        ...alterUnsavedQueryEditorState(
           state,
           {
             hideLeftBar: action.hideLeftBar,

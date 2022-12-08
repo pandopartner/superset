@@ -445,7 +445,8 @@ class TestSavedQueryApi(SupersetTestCase):
         expected_result = {
             "count": len(databases),
             "result": [
-                {"text": str(database), "value": database.id} for database in databases
+                {"extra": {}, "text": str(database), "value": database.id}
+                for database in databases
             ],
         }
 
@@ -523,6 +524,7 @@ class TestSavedQueryApi(SupersetTestCase):
             "sql_tables": [{"catalog": None, "schema": None, "table": "table1"}],
             "schema": "schema1",
             "label": "label1",
+            "template_parameters": None,
         }
         data = json.loads(rv.data.decode("utf-8"))
         self.assertIn("changed_on_delta_humanized", data["result"])

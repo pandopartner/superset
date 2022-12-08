@@ -63,6 +63,10 @@ export interface MenuProps {
     brand: BrandProps;
     navbar_right: NavBarProps;
     settings: MenuObjectProps[];
+    environment_tag: {
+      text: string;
+      color: string;
+    };
   };
   isFrontendRoute?: (path?: string) => boolean;
 }
@@ -200,7 +204,13 @@ const { SubMenu } = DropdownMenu;
 const { useBreakpoint } = Grid;
 
 export function Menu({
-  data: { menu, brand, navbar_right: navbarRight, settings },
+  data: {
+    menu,
+    brand,
+    navbar_right: navbarRight,
+    settings,
+    environment_tag: environmentTag,
+  },
   isFrontendRoute = () => false,
 }: MenuProps) {
   const [showMenu, setMenu] = useState<MenuMode>('horizontal');
@@ -330,6 +340,7 @@ export function Menu({
             settings={settings}
             navbarRight={navbarRight}
             isFrontendRoute={isFrontendRoute}
+            environmentTag={environmentTag}
           />
         </Col>
       </Row>
@@ -344,6 +355,7 @@ export default function MenuWrapper({ data, ...rest }: MenuProps) {
   };
   // Menu items that should go into settings dropdown
   const settingsMenus = {
+    Data: true,
     Security: true,
     Manage: true,
   };

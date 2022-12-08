@@ -38,6 +38,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Set,
     Type,
     TYPE_CHECKING,
     Union,
@@ -56,9 +57,10 @@ from superset.advanced_data_type.plugins.internet_port import internet_port
 from superset.advanced_data_type.types import AdvancedDataType
 from superset.constants import CHANGE_ME_SECRET_KEY
 from superset.jinja_context import BaseTemplateProcessor
+from superset.reports.types import ReportScheduleExecutor
 from superset.stats_logger import DummyStatsLogger
 from superset.superset_typing import CacheConfig
-from superset.utils.core import is_test, parse_boolean_string
+from superset.utils.core import is_test, NO_TIME_RANGE, parse_boolean_string
 from superset.utils.encrypt import SQLAlchemyUtilsAdapter
 from superset.utils.log import DBEventLogger
 from superset.utils.logging_configurator import DefaultLoggingConfigurator
@@ -103,7 +105,6 @@ PACKAGE_JSON_FILE = pkg_resources.resource_filename(
 #     "rel": "icon"
 # },
 FAVICONS = [{"href": "/static/assets/images/favicon.png"}]
-TAB_TITLE = None
 
 
 def _try_json_readversion(filepath: str) -> Optional[str]:
@@ -153,6 +154,9 @@ ROW_LIMIT = 50000
 SAMPLES_ROW_LIMIT = 1000
 # max rows retrieved by filter select auto complete
 FILTER_SELECT_ROW_LIMIT = 10000
+# default time filter in explore
+# values may be "Last day", "Last week", "<ISO date> : now", etc.
+DEFAULT_TIME_FILTER = NO_TIME_RANGE
 
 SUPERSET_WEBSERVER_PROTOCOL = "http"
 SUPERSET_WEBSERVER_ADDRESS = "0.0.0.0"
@@ -211,7 +215,7 @@ SQLALCHEMY_CUSTOM_PASSWORD_STORE = None
 #
 # e.g.:
 #
-# class AesGcmEncryptedAdapter(  # pylint: disable=too-few-public-methods
+# class AesGcmEncryptedAdapter(
 #     AbstractEncryptedFieldAdapter
 # ):
 #     def create(
@@ -425,6 +429,7 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     # Feature is under active development and breaking changes are expected
     "DASHBOARD_NATIVE_FILTERS_SET": False,
     "DASHBOARD_FILTERS_EXPERIMENTAL": False,
+    "DASHBOARD_VIRTUALIZATION": False,
     "GLOBAL_ASYNC_QUERIES": False,
     "VERSIONED_EXPORT": True,
     "EMBEDDED_SUPERSET": False,
@@ -453,7 +458,7 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     "UX_BETA": False,
     "GENERIC_CHART_AXES": False,
     "ALLOW_ADHOC_SUBQUERY": False,
-    "USE_ANALAGOUS_COLORS": True,
+    "USE_ANALAGOUS_COLORS": False,
     "DASHBOARD_EDIT_CHART_IN_NEW_TAB": False,
     # Apply RLS rules to SQL Lab queries. This requires parsing and manipulating the
     # query, and might break queries and/or allow users to bypass RLS. Use with care!
@@ -464,6 +469,8 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     # Enable sharing charts with embedding
     "EMBEDDABLE_CHARTS": True,
     "DRILL_TO_DETAIL": False,
+    "DATAPANEL_CLOSED_BY_DEFAULT": False,
+    "HORIZONTAL_FILTER_BAR": False,
 }
 
 # Feature flags may also be set via 'SUPERSET_FEATURE_' prefixed environment vars.
@@ -644,6 +651,28 @@ STORE_CACHE_KEYS_IN_METADATA_DB = False
 ENABLE_CORS = False
 CORS_OPTIONS: Dict[Any, Any] = {}
 
+# Sanitizes the HTML content used in markdowns to allow its rendering in a safe manner.
+# Disabling this option is not recommended for security reasons. If you wish to allow
+# valid safe elements that are not included in the default sanitization schema, use the
+# HTML_SANITIZATION_SCHEMA_EXTENSIONS configuration.
+HTML_SANITIZATION = True
+
+# Use this configuration to extend the HTML sanitization schema.
+# By default we use the Gihtub schema defined in
+# https://github.com/syntax-tree/hast-util-sanitize/blob/main/lib/schema.js
+# For example, the following configuration would allow the rendering of the
+# style attribute for div elements and the ftp protocol in hrefs:
+# HTML_SANITIZATION_SCHEMA_EXTENSIONS = {
+#   "attributes": {
+#     "div": ["style"],
+#   },
+#   "protocols": {
+#     "href": ["ftp"],
+#   }
+# }
+# Be careful when extending the default schema to avoid XSS attacks.
+HTML_SANITIZATION_SCHEMA_EXTENSIONS: Dict[str, Any] = {}
+
 # Chrome allows up to 6 open connections per domain at a time. When there are more
 # than 6 slices in dashboard, a lot of time fetch requests are queued up and wait for
 # next available socket. PR #5039 is trying to allow domain sharding for Superset,
@@ -666,13 +695,13 @@ CSV_EXPORT = {"encoding": "utf-8"}
 # Time grain configurations
 # ---------------------------------------------------
 # List of time grains to disable in the application (see list of builtin
-# time grains in superset/db_engine_specs.builtin_time_grains).
+# time grains in superset/db_engine_specs/base.py).
 # For example: to disable 1 second time grain:
 # TIME_GRAIN_DENYLIST = ['PT1S']
 TIME_GRAIN_DENYLIST: List[str] = []
 
 # Additional time grains to be supported using similar definitions as in
-# superset/db_engine_specs.builtin_time_grains.
+# superset/db_engine_specs/base.py.
 # For example: To add a new 2 second time grain:
 # TIME_GRAIN_ADDONS = {'PT2S': '2 second'}
 TIME_GRAIN_ADDONS: Dict[str, str] = {}
@@ -759,16 +788,25 @@ DISPLAY_MAX_ROW = 10000
 # the SQL Lab UI
 DEFAULT_SQLLAB_LIMIT = 1000
 
-# Maximum number of tables/views displayed in the dropdown window in SQL Lab.
-MAX_TABLE_NAMES = 3000
-
 # Adds a warning message on sqllab save query and schedule query modals.
 SQLLAB_SAVE_WARNING_MESSAGE = None
 SQLLAB_SCHEDULE_WARNING_MESSAGE = None
 
 # Force refresh while auto-refresh in dashboard
 DASHBOARD_AUTO_REFRESH_MODE: Literal["fetch", "force"] = "force"
-
+# Dashboard auto refresh intervals
+DASHBOARD_AUTO_REFRESH_INTERVALS = [
+    [0, "Don't refresh"],
+    [10, "10 seconds"],
+    [30, "30 seconds"],
+    [60, "1 minute"],
+    [300, "5 minutes"],
+    [1800, "30 minutes"],
+    [3600, "1 hour"],
+    [21600, "6 hours"],
+    [43200, "12 hours"],
+    [86400, "24 hours"],
+]
 
 # Default celery config is to use SQLA as a broker, in a production setting
 # you'll want to use a proper broker as specified here:
@@ -995,7 +1033,9 @@ SMTP_USER = "superset"
 SMTP_PORT = 25
 SMTP_PASSWORD = "superset"
 SMTP_MAIL_FROM = "superset@superset.com"
-
+# If True creates a default SSL context with ssl.Purpose.CLIENT_AUTH using the
+# default system root CA certificates.
+SMTP_SSL_SERVER_AUTH = False
 ENABLE_CHUNK_ENCODING = False
 
 # Whether to bump the logging level to ERROR on the flask_appbuilder package
@@ -1108,6 +1148,19 @@ def EMAIL_HEADER_MUTATOR(  # pylint: disable=invalid-name,unused-argument
     return msg
 
 
+# Define a list of usernames to be excluded from all dropdown lists of users
+# Owners, filters for created_by, etc.
+# The users can also be excluded by overriding the get_exclude_users_from_lists method
+# in security manager
+EXCLUDE_USERS_FROM_LISTS: Optional[List[str]] = None
+
+# For database connections, this dictionary will remove engines from the available
+# list/dropdown if you do not want these dbs to show as available.
+# The available list is generated by driver installed, and some engines have multiple
+# drivers.
+# e.g., DBS_AVAILABLE_DENYLIST: Dict[str, Set[str]] = {"databricks": ("pyhive", "pyodbc")}
+DBS_AVAILABLE_DENYLIST: Dict[str, Set[str]] = {}
+
 # This auth provider is used by background (offline) tasks that need to access
 # protected resources. Can be overridden by end users in order to support
 # custom auth mechanisms
@@ -1120,6 +1173,24 @@ MACHINE_AUTH_PROVIDER_CLASS = "superset.utils.machine_auth.MachineAuthProvider"
 # sliding cron window size, should be synced with the celery beat config minus 1 second
 ALERT_REPORTS_CRON_WINDOW_SIZE = 59
 ALERT_REPORTS_WORKING_TIME_OUT_KILL = True
+# Which user to attempt to execute Alerts/Reports as. By default,
+# use the user defined in the `THUMBNAIL_SELENIUM_USER` config parameter.
+# To first try to execute as the creator in the owners list (if present), then fall
+# back to the creator, then the last modifier in the owners list (if present), then the
+# last modifier, then an owner (giving priority to the last modifier and then the
+# creator if either is contained within the list of owners, otherwise the first owner
+# will be used) and finally `THUMBNAIL_SELENIUM_USER`, set as follows:
+# ALERT_REPORTS_EXECUTE_AS = [
+#     ReportScheduleExecutor.CREATOR_OWNER,
+#     ReportScheduleExecutor.CREATOR,
+#     ReportScheduleExecutor.MODIFIER_OWNER,
+#     ReportScheduleExecutor.MODIFIER,
+#     ReportScheduleExecutor.OWNER,
+#     ReportScheduleExecutor.SELENIUM,
+# ]
+ALERT_REPORTS_EXECUTE_AS: List[ReportScheduleExecutor] = [
+    ReportScheduleExecutor.SELENIUM
+]
 # if ALERT_REPORTS_WORKING_TIME_OUT_KILL is True, set a celery hard timeout
 # Equal to working timeout + ALERT_REPORTS_WORKING_TIME_OUT_LAG
 ALERT_REPORTS_WORKING_TIME_OUT_LAG = int(timedelta(seconds=10).total_seconds())
@@ -1216,6 +1287,9 @@ PREFERRED_DATABASES: List[str] = [
 # one here.
 TEST_DATABASE_CONNECTION_TIMEOUT = timedelta(seconds=30)
 
+# Enable/disable CSP warning
+CONTENT_SECURITY_POLICY_WARNING = True
+
 # Do you want Talisman enabled?
 TALISMAN_ENABLED = False
 # If you want Talisman, how do you want it configured??
@@ -1262,6 +1336,9 @@ STATIC_ASSETS_PREFIX = ""
 # Some sqlalchemy connection strings can open Superset to security risks.
 # Typically these should not be allowed.
 PREVENT_UNSAFE_DB_CONNECTIONS = True
+
+# Prevents unsafe default endpoints to be registered on datasets.
+PREVENT_UNSAFE_DEFAULT_URLS_ON_DATASET = True
 
 # Path used to store SSL certificates that are generated when using custom certs.
 # Defaults to temporary directory.
@@ -1343,12 +1420,29 @@ DATASET_HEALTH_CHECK: Optional[Callable[["SqlaTable"], str]] = None
 MENU_HIDE_USER_INFO = False
 
 # Set to False to only allow viewing own recent activity
+# or to disallow users from viewing other users profile page
 ENABLE_BROAD_ACTIVITY_ACCESS = True
 
 # the advanced data type key should correspond to that set in the column metadata
 ADVANCED_DATA_TYPES: Dict[str, AdvancedDataType] = {
     "internet_address": internet_address,
     "port": internet_port,
+}
+
+# Configuration for environment tag shown on the navbar. Setting 'text' to '' will hide the tag.
+# 'color' can either be a hex color code, or a dot-indexed theme color (e.g. error.base)
+ENVIRONMENT_TAG_CONFIG = {
+    "variable": "FLASK_ENV",
+    "values": {
+        "development": {
+            "color": "error.base",
+            "text": "Development",
+        },
+        "production": {
+            "color": "",
+            "text": "",
+        },
+    },
 }
 
 # -------------------------------------------------------------------

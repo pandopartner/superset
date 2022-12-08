@@ -49,7 +49,6 @@ if TYPE_CHECKING:
     # prevent circular imports
     from superset.models.core import Database
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -147,12 +146,6 @@ class HiveEngineSpec(PrestoEngineSpec):
         hive.Cursor.fetch_logs = patched_hive.fetch_logs
 
     @classmethod
-    def get_all_datasource_names(
-        cls, database: "Database", datasource_type: str
-    ) -> List[utils.DatasourceName]:
-        return BaseEngineSpec.get_all_datasource_names(database, datasource_type)
-
-    @classmethod
     def fetch_data(
         cls, cursor: Any, limit: Optional[int] = None
     ) -> List[Tuple[Any, ...]]:
@@ -192,8 +185,6 @@ class HiveEngineSpec(PrestoEngineSpec):
         :param to_sql_kwargs: The kwargs to be passed to pandas.DataFrame.to_sql` method
         """
 
-        engine = cls.get_engine(database)
-
         if to_sql_kwargs["if_exists"] == "append":
             raise SupersetException("Append operation not currently supported")
 
@@ -212,7 +203,8 @@ class HiveEngineSpec(PrestoEngineSpec):
             if table_exists:
                 raise SupersetException("Table already exists")
         elif to_sql_kwargs["if_exists"] == "replace":
-            engine.execute(f"DROP TABLE IF EXISTS {str(table)}")
+            with cls.get_engine(database) as engine:
+                engine.execute(f"DROP TABLE IF EXISTS {str(table)}")
 
         def _get_hive_type(dtype: np.dtype) -> str:
             hive_type_by_dtype = {
@@ -261,10 +253,6 @@ class HiveEngineSpec(PrestoEngineSpec):
             return f"""CAST('{dttm
                 .isoformat(sep=" ", timespec="microseconds")}' AS TIMESTAMP)"""
         return None
-
-    @classmethod
-    def epoch_to_dttm(cls) -> str:
-        return "from_unixtime({col})"
 
     @classmethod
     def adjust_database_uri(

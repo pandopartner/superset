@@ -49,6 +49,7 @@ import ImportModelsModal from 'src/components/ImportModal/index';
 
 import Dashboard from 'src/dashboard/containers/Dashboard';
 import CertifiedBadge from 'src/components/CertifiedBadge';
+import { bootstrapData } from 'src/preamble';
 import DashboardCard from './DashboardCard';
 import { DashboardStatus } from './types';
 
@@ -132,6 +133,8 @@ function DashboardList(props: DashboardListProps) {
   const [importingDashboard, showImportModal] = useState<boolean>(false);
   const [passwordFields, setPasswordFields] = useState<string[]>([]);
   const [preparingExport, setPreparingExport] = useState<boolean>(false);
+  const enableBroadUserAccess =
+    bootstrapData?.common?.conf?.ENABLE_BROAD_ACTIVITY_ACCESS;
 
   const openDashboardImportModal = () => {
     showImportModal(true);
@@ -290,7 +293,12 @@ function DashboardList(props: DashboardListProps) {
               changed_by_url: changedByUrl,
             },
           },
-        }: any) => <a href={changedByUrl}>{changedByName}</a>,
+        }: any) =>
+          enableBroadUserAccess ? (
+            <a href={changedByUrl}>{changedByName}</a>
+          ) : (
+            <>{changedByName}</>
+          ),
         Header: t('Modified by'),
         accessor: 'changed_by.first_name',
         size: 'xl',
@@ -439,6 +447,7 @@ function DashboardList(props: DashboardListProps) {
   const favoritesFilter: Filter = useMemo(
     () => ({
       Header: t('Favorite'),
+      key: 'favorite',
       id: 'id',
       urlDisplay: 'favorite',
       input: 'select',
@@ -455,7 +464,15 @@ function DashboardList(props: DashboardListProps) {
   const filters: Filters = useMemo(
     () => [
       {
+        Header: t('Search'),
+        key: 'search',
+        id: 'dashboard_title',
+        input: 'search',
+        operator: FilterOperator.titleOrSlug,
+      },
+      {
         Header: t('Owner'),
+        key: 'owner',
         id: 'owners',
         input: 'select',
         operator: FilterOperator.relationManyMany,
@@ -477,6 +494,7 @@ function DashboardList(props: DashboardListProps) {
       },
       {
         Header: t('Created by'),
+        key: 'created_by',
         id: 'created_by',
         input: 'select',
         operator: FilterOperator.relationOneMany,
@@ -498,6 +516,7 @@ function DashboardList(props: DashboardListProps) {
       },
       {
         Header: t('Status'),
+        key: 'published',
         id: 'published',
         input: 'select',
         operator: FilterOperator.equals,
@@ -510,6 +529,7 @@ function DashboardList(props: DashboardListProps) {
       ...(userId ? [favoritesFilter] : []),
       {
         Header: t('Certified'),
+        key: 'certified',
         id: 'id',
         urlDisplay: 'certified',
         input: 'select',
@@ -519,12 +539,6 @@ function DashboardList(props: DashboardListProps) {
           { label: t('Yes'), value: true },
           { label: t('No'), value: false },
         ],
-      },
-      {
-        Header: t('Search'),
-        id: 'dashboard_title',
-        input: 'search',
-        operator: FilterOperator.titleOrSlug,
       },
     ],
     [addDangerToast, favoritesFilter, props.user],
