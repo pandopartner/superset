@@ -271,7 +271,7 @@ werkzeug==2.0.3
     # via
     #   flask
     #   flask-jwt-extended
-wtforms==2.3.0
+wtforms==2.3.3
     # via
     #   apache-superset
     #   flask-appbuilder
