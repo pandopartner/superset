@@ -61,6 +61,7 @@ SQLALCHEMY_DATABASE_URI = "%s://%s:%s@%s:%s/%s" % (
     DATABASE_PORT,
     DATABASE_DB,
 )
+SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 REDIS_HOST = get_env_variable("REDIS_HOST")
 REDIS_PORT = get_env_variable("REDIS_PORT")
